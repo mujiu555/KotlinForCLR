@@ -164,7 +164,7 @@ object Frontend : PipelinePhase<ConfigurationPipelineArtifact, ClrFrontendPipeli
 				.map {
 					scope.async {
 						resolveAssembly(
-							dotnetHome = configuration.get(CLRConfigurationKeys.DOTNET_HOME)!!.absolutePath,
+							dotnetHome = configuration.get(CLRConfigurationKeys.DOTNET_HOME)?.absolutePath,
 							programPath = configuration.get(CLRConfigurationKeys.ASSEMBLY_RESOLVER)!!.absolutePath,
 							assemblies = dllPaths.map(File::getAbsolutePath),
 							assembly = it

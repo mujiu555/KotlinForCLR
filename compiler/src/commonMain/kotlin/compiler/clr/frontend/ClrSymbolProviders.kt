@@ -1277,6 +1277,13 @@ class ClrBuiltinsSymbolProvider(
 				containingDeclarationSymbol = classSymbol
 				variance = Variance.OUT_VARIANCE
 				isReified = true
+				bounds += buildResolvedTypeRef {
+					coneType = ConeClassLikeTypeImpl(
+						classId("kotlin", "Any").toLookupTag(),
+						emptyArray(),
+						true
+					)
+				}
 			}
 		}
 		typeParameters += typeParameter.fir

@@ -19,10 +19,18 @@ package compiler.clr.frontend
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
-fun resolveAssembly(dotnetHome: String, programPath: String, assemblies: List<String>, assembly: String): NodeAssembly {
+fun resolveAssembly(
+	dotnetHome: String?,
+	programPath: String,
+	assemblies: List<String>,
+	assembly: String,
+): NodeAssembly {
 	println("processing: $assembly")
-	val process = ProcessBuilder("$dotnetHome/dotnet", "\"$programPath\"", "\"${assemblies.joinToString(";")}\" \"$assembly\"")
-		.start()
+	val process = ProcessBuilder(
+		dotnetHome?.let { "\"$dotnetHome/dotnet\"" } ?: "dotnet",
+		"\"$programPath\"",
+		"\"${assemblies.joinToString(";")}\" \"$assembly\""
+	).start()
 	val json = process.inputReader(Charsets.UTF_8).use {
 		it.readText()
 	}
