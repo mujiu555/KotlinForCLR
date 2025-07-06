@@ -619,13 +619,30 @@ class ClassCodegen(val context: ClrBackendContext) {
 						plainPlain(")")
 					)
 
-					else -> multiLinePlain(
-						"/*",
-						"Unsupported name: ${function.name.visit()}",
-						"at IrCall.visitClassParent: $this",
-						"is operator",
-						"*/",
-					)
+					else -> {
+						val name = function.name.visit()
+						when {
+							name.startsWith("<set-") -> {
+								multiLineCode(
+									plainPlain(name.substring("<set-".length, name.length - 1)),
+									plainPlain(" = "),
+									valueArguments[0]!!.visitUsing()
+								)
+							}
+
+							name.startsWith("<get-") -> {
+								plainPlain(name.substring("<get-".length, name.length - 1))
+							}
+
+							else -> multiLinePlain(
+								"/*",
+								"Unsupported name: ${function.name.visit()}",
+								"at IrCall.visitClassParent: $this",
+								"is operator",
+								"*/",
+							)
+						}
+					}
 				}
 
 				else -> singleLineListCode(
@@ -891,14 +908,7 @@ class ClassCodegen(val context: ClrBackendContext) {
 		true -> when (asString()) {
 			"<this>" -> "this"
 			"<iterator>" -> "iterator"
-			else -> """
-				/*
-				Unsupported special name: ${asString()}
-				at IrSymbol.visit: $this
-				is IrValueSymbol
-				is special
-				*/
-			""".trimIndent()
+			else -> asString()
 		}
 
 		else -> asString()
