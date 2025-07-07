@@ -17,6 +17,7 @@
 package compiler.clr.backend
 
 import compiler.clr.CLRConfigurationKeys
+import compiler.clr.backend.codegen.clean
 import compiler.clr.backend.codegen.render
 import compiler.clr.backend.codegen.visit
 import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
@@ -73,8 +74,14 @@ object KotlinToCSharpCompiler {
 		configuration: CompilerConfiguration
 	) {
 		val map = codegenFactory.invokeCodegen(codegenInput)
-		File(configuration.get(CLRConfigurationKeys.OUTPUT_DIRECTORY)!!, "Code Node.xml").printWriter().use { writer ->
+		File(configuration.get(CLRConfigurationKeys.OUTPUT_DIRECTORY)!!, "Raw Code Node.xml").printWriter().use { writer ->
 			map?.values?.forEach {
+				writer.println(it.render())
+			}
+		}
+		val cleanedMap = map?.mapValues { it.value.clean() }
+		File(configuration.get(CLRConfigurationKeys.OUTPUT_DIRECTORY)!!, "Code Node.xml").printWriter().use { writer ->
+			cleanedMap?.values?.forEach {
 				writer.println(it.render())
 			}
 		}
@@ -84,7 +91,7 @@ object KotlinToCSharpCompiler {
 			configuration.getBoolean(CLIConfigurationKeys.RENDER_DIAGNOSTIC_INTERNAL_NAME)
 		)
 		val destination = configuration.get(CLRConfigurationKeys.OUTPUT_DIRECTORY)!!
-		map?.let { map ->
+		cleanedMap?.let { map ->
 			for ((irFile, node) in map) {
 				FileWriter(File(destination, irFile.name + ".cs")).use {
 					it.write(node.visit())

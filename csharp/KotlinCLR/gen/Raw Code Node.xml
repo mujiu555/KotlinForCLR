@@ -1,0 +1,231 @@
+<CodeNode.MultiLine>
+    <PlainNode.SingleLine>
+        <PlainNode.Plain>[global::kotlin.clr.KotlinFileClass]</PlainNode.Plain>
+    </PlainNode.SingleLine>
+    <CodeNode.SingleLine>
+        <PlainNode.Plain>public </PlainNode.Plain>
+        <PlainNode.Plain>static </PlainNode.Plain>
+        <PlainNode.Plain>class </PlainNode.Plain>
+        <PlainNode.Plain>MainKt</PlainNode.Plain>
+    </CodeNode.SingleLine>
+    <PaddingNode.Block>
+        <CodeNode.SingleLine>
+            <PlainNode.Plain>private </PlainNode.Plain>
+            <PlainNode.Plain>static </PlainNode.Plain>
+            <PlainNode.Plain>global::System.Double</PlainNode.Plain>
+            <PlainNode.Plain> </PlainNode.Plain>
+            <PlainNode.Plain>PI_backingField</PlainNode.Plain>
+            <PlainNode.Plain>;</PlainNode.Plain>
+        </CodeNode.SingleLine>
+        <CodeNode.None />
+        <CodeNode.SingleLine>
+            <PlainNode.Plain>private </PlainNode.Plain>
+            <PlainNode.Plain>static </PlainNode.Plain>
+            <PlainNode.Plain>global::System.Int32</PlainNode.Plain>
+            <PlainNode.Plain> </PlainNode.Plain>
+            <PlainNode.Plain>x_backingField</PlainNode.Plain>
+            <PlainNode.Plain>;</PlainNode.Plain>
+        </CodeNode.SingleLine>
+        <CodeNode.None />
+        <CodeNode.MultiLine>
+            <CodeNode.SingleLine>
+                <PlainNode.Plain>public </PlainNode.Plain>
+                <PlainNode.Plain>static </PlainNode.Plain>
+                <PlainNode.Plain>global::System.Double</PlainNode.Plain>
+                <PlainNode.Plain> </PlainNode.Plain>
+                <PlainNode.Plain>PI</PlainNode.Plain>
+            </CodeNode.SingleLine>
+            <PaddingNode.Block>
+                <CodeNode.MultiLine>
+                    <PlainNode.Plain>get</PlainNode.Plain>
+                    <PaddingNode.Block>
+                        <CodeNode.SingleLine>
+                            <CodeNode.SingleLineList>
+                                <PlainNode.Plain>return </PlainNode.Plain>
+                                <CodeNode.SingleLineList>
+                                    <CodeNode.SingleLineList>
+                                        <PlainNode.Plain>PI</PlainNode.Plain>
+                                        <PlainNode.Plain>_backingField</PlainNode.Plain>
+                                    </CodeNode.SingleLineList>
+                                </CodeNode.SingleLineList>
+                            </CodeNode.SingleLineList>
+                            <PlainNode.Plain>;</PlainNode.Plain>
+                        </CodeNode.SingleLine>
+                    </PaddingNode.Block>
+                </CodeNode.MultiLine>
+            </PaddingNode.Block>
+        </CodeNode.MultiLine>
+        <CodeNode.None />
+        <CodeNode.MultiLine>
+            <CodeNode.SingleLine>
+                <PlainNode.Plain>public </PlainNode.Plain>
+                <PlainNode.Plain>static </PlainNode.Plain>
+                <PlainNode.Plain>global::System.Int32</PlainNode.Plain>
+                <PlainNode.Plain> </PlainNode.Plain>
+                <PlainNode.Plain>x</PlainNode.Plain>
+            </CodeNode.SingleLine>
+            <PaddingNode.Block>
+                <CodeNode.MultiLine>
+                    <PlainNode.Plain>get</PlainNode.Plain>
+                    <PaddingNode.Block>
+                        <CodeNode.SingleLine>
+                            <CodeNode.SingleLineList>
+                                <PlainNode.Plain>return </PlainNode.Plain>
+                                <CodeNode.SingleLineList>
+                                    <CodeNode.SingleLineList>
+                                        <PlainNode.Plain>x</PlainNode.Plain>
+                                        <PlainNode.Plain>_backingField</PlainNode.Plain>
+                                    </CodeNode.SingleLineList>
+                                </CodeNode.SingleLineList>
+                            </CodeNode.SingleLineList>
+                            <PlainNode.Plain>;</PlainNode.Plain>
+                        </CodeNode.SingleLine>
+                    </PaddingNode.Block>
+                    <PlainNode.Plain>set</PlainNode.Plain>
+                    <PaddingNode.Block>
+                        <CodeNode.SingleLine>
+                            <CodeNode.SingleLineList>
+                                <CodeNode.SingleLineList>
+                                    <PlainNode.Plain>x</PlainNode.Plain>
+                                    <PlainNode.Plain>_backingField</PlainNode.Plain>
+                                </CodeNode.SingleLineList>
+                                <PlainNode.Plain> = </PlainNode.Plain>
+                                <PlainNode.Plain>&lt;set-?&gt;</PlainNode.Plain>
+                            </CodeNode.SingleLineList>
+                            <PlainNode.Plain>;</PlainNode.Plain>
+                        </CodeNode.SingleLine>
+                    </PaddingNode.Block>
+                </CodeNode.MultiLine>
+            </PaddingNode.Block>
+        </CodeNode.MultiLine>
+        <CodeNode.None />
+        <CodeNode.MultiLine>
+            <CodeNode.SingleLine>
+                <PlainNode.Plain>public </PlainNode.Plain>
+                <PlainNode.Plain>static </PlainNode.Plain>
+                <PlainNode.Plain>void </PlainNode.Plain>
+                <PlainNode.Plain>incrementX(</PlainNode.Plain>
+                <PlainNode.Plain></PlainNode.Plain>
+                <PlainNode.Plain>)</PlainNode.Plain>
+            </CodeNode.SingleLine>
+            <PaddingNode.Block>
+                <CodeNode.SingleLine>
+                    <CodeNode.SingleLineList>
+                        <PlainNode.Plain>global::MainKt</PlainNode.Plain>
+                        <PlainNode.Plain>.</PlainNode.Plain>
+                        <PlainNode.Plain>x</PlainNode.Plain>
+                        <PlainNode.Plain> = </PlainNode.Plain>
+                        <CodeNode.SingleLineList>
+                            <PlainNode.Plain>(</PlainNode.Plain>
+                            <CodeNode.SingleLineList>
+                                <PlainNode.Plain>global::MainKt</PlainNode.Plain>
+                                <PlainNode.Plain>.</PlainNode.Plain>
+                                <PlainNode.Plain>x</PlainNode.Plain>
+                            </CodeNode.SingleLineList>
+                            <PlainNode.Plain>)</PlainNode.Plain>
+                            <PlainNode.Plain> + </PlainNode.Plain>
+                            <PlainNode.Plain>(</PlainNode.Plain>
+                            <PlainNode.Plain>1</PlainNode.Plain>
+                            <PlainNode.Plain>)</PlainNode.Plain>
+                        </CodeNode.SingleLineList>
+                    </CodeNode.SingleLineList>
+                    <PlainNode.Plain>;</PlainNode.Plain>
+                </CodeNode.SingleLine>
+            </PaddingNode.Block>
+        </CodeNode.MultiLine>
+        <CodeNode.None />
+        <CodeNode.MultiLine>
+            <CodeNode.SingleLine>
+                <PlainNode.Plain>public </PlainNode.Plain>
+                <PlainNode.Plain>static </PlainNode.Plain>
+                <PlainNode.Plain>void </PlainNode.Plain>
+                <PlainNode.Plain>main(</PlainNode.Plain>
+                <PlainNode.Plain></PlainNode.Plain>
+                <PlainNode.Plain>)</PlainNode.Plain>
+            </CodeNode.SingleLine>
+            <PaddingNode.Block>
+                <CodeNode.SingleLine>
+                    <CodeNode.SingleLineList>
+                        <PlainNode.Plain>global::kotlin.io.ConsoleKt</PlainNode.Plain>
+                        <PlainNode.Plain>.</PlainNode.Plain>
+                        <PlainNode.Plain>println</PlainNode.Plain>
+                        <PlainNode.Plain>(</PlainNode.Plain>
+                        <CodeNode.StringConcatenation>
+                            <PlainNode.Plain>"x = "</PlainNode.Plain>
+                            <CodeNode.SingleLineList>
+                                <PlainNode.Plain>global::MainKt</PlainNode.Plain>
+                                <PlainNode.Plain>.</PlainNode.Plain>
+                                <PlainNode.Plain>x</PlainNode.Plain>
+                            </CodeNode.SingleLineList>
+                            <PlainNode.Plain>", PI = "</PlainNode.Plain>
+                            <CodeNode.SingleLineList>
+                                <PlainNode.Plain>global::MainKt</PlainNode.Plain>
+                                <PlainNode.Plain>.</PlainNode.Plain>
+                                <PlainNode.Plain>PI</PlainNode.Plain>
+                            </CodeNode.SingleLineList>
+                        </CodeNode.StringConcatenation>
+                        <PlainNode.Plain>)</PlainNode.Plain>
+                    </CodeNode.SingleLineList>
+                    <PlainNode.Plain>;</PlainNode.Plain>
+                </CodeNode.SingleLine>
+                <CodeNode.SingleLine>
+                    <CodeNode.SingleLineList>
+                        <PlainNode.Plain>global::MainKt</PlainNode.Plain>
+                        <PlainNode.Plain>.</PlainNode.Plain>
+                        <PlainNode.Plain>incrementX</PlainNode.Plain>
+                        <PlainNode.Plain>(</PlainNode.Plain>
+                        <PlainNode.Plain>)</PlainNode.Plain>
+                    </CodeNode.SingleLineList>
+                    <PlainNode.Plain>;</PlainNode.Plain>
+                </CodeNode.SingleLine>
+                <CodeNode.SingleLine>
+                    <CodeNode.SingleLineList>
+                        <PlainNode.Plain>global::kotlin.io.ConsoleKt</PlainNode.Plain>
+                        <PlainNode.Plain>.</PlainNode.Plain>
+                        <PlainNode.Plain>println</PlainNode.Plain>
+                        <PlainNode.Plain>(</PlainNode.Plain>
+                        <CodeNode.StringConcatenation>
+                            <PlainNode.Plain>"x = "</PlainNode.Plain>
+                            <CodeNode.SingleLineList>
+                                <PlainNode.Plain>global::MainKt</PlainNode.Plain>
+                                <PlainNode.Plain>.</PlainNode.Plain>
+                                <PlainNode.Plain>x</PlainNode.Plain>
+                            </CodeNode.SingleLineList>
+                            <PlainNode.Plain>", PI = "</PlainNode.Plain>
+                            <CodeNode.SingleLineList>
+                                <PlainNode.Plain>global::MainKt</PlainNode.Plain>
+                                <PlainNode.Plain>.</PlainNode.Plain>
+                                <PlainNode.Plain>PI</PlainNode.Plain>
+                            </CodeNode.SingleLineList>
+                        </CodeNode.StringConcatenation>
+                        <PlainNode.Plain>)</PlainNode.Plain>
+                    </CodeNode.SingleLineList>
+                    <PlainNode.Plain>;</PlainNode.Plain>
+                </CodeNode.SingleLine>
+            </PaddingNode.Block>
+        </CodeNode.MultiLine>
+        <CodeNode.None />
+        <CodeNode.MultiLine>
+            <CodeNode.SingleLine>
+                <PlainNode.Plain>public </PlainNode.Plain>
+                <PlainNode.Plain>static </PlainNode.Plain>
+                <PlainNode.Plain>void </PlainNode.Plain>
+                <PlainNode.Plain>Main(</PlainNode.Plain>
+                <PlainNode.Plain>global::System.String[] args</PlainNode.Plain>
+                <PlainNode.Plain>)</PlainNode.Plain>
+            </CodeNode.SingleLine>
+            <PaddingNode.Block>
+                <CodeNode.SingleLine>
+                    <CodeNode.SingleLineList>
+                        <PlainNode.Plain>global::MainKt</PlainNode.Plain>
+                        <PlainNode.Plain>.</PlainNode.Plain>
+                        <PlainNode.Plain>main</PlainNode.Plain>
+                        <PlainNode.Plain>(</PlainNode.Plain>
+                        <PlainNode.Plain>)</PlainNode.Plain>
+                    </CodeNode.SingleLineList>
+                    <PlainNode.Plain>;</PlainNode.Plain>
+                </CodeNode.SingleLine>
+            </PaddingNode.Block>
+        </CodeNode.MultiLine>
+    </PaddingNode.Block>
+</CodeNode.MultiLine>

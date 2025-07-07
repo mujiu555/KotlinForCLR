@@ -1,17 +1,15 @@
 FILE: Main.kt
+    public? final? val PI: <implicit> = Double(3.14)
+        public? get(): <implicit>
+    public? final? var x: Int = IntegerLiteral(0)
+        public? get(): Int
+        public? set(value: Int): R|kotlin/Unit|
+    public? final? fun incrementX(): R|kotlin/Unit| {
+        +=(x#, IntegerLiteral(1))
+    }
     public? final? fun main(): R|kotlin/Unit| {
-        lval items: <implicit> = listOf#(String(apple), String(banana), String(kiwifruit))
-         {
-            lval <iterator>: <implicit> = items#.iterator#()
-            while(R|<local>/<iterator>|.hasNext#()) {
-                lval item: <implicit> = R|<local>/<iterator>|.next#()
-                 {
-                    println#(item#)
-                }
-
-            }
-
-        }
-
+        println#(<strcat>(String(x = ), x#, String(, PI = ), PI#))
+        incrementX#()
+        println#(<strcat>(String(x = ), x#, String(, PI = ), PI#))
     }
 

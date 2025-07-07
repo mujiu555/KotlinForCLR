@@ -42,12 +42,12 @@ private class Renderer {
 
 	private fun CodeNode.SingleLineList.render(padding: Int) = buildString {
 		repeat(padding) { append("    ") }
-		appendLine("<CodeNode.CodeList>")
+		appendLine("<CodeNode.SingleLineList>")
 
 		appendLine(nodes.joinToString("\n") { it.render(padding + 1) })
 
 		repeat(padding) { append("    ") }
-		append("</CodeNode.CodeList>")
+		append("</CodeNode.SingleLineList>")
 	}
 
 	private fun CodeNode.MultiLineList.render(padding: Int) = buildString {

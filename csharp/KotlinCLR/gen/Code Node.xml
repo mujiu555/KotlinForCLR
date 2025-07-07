@@ -3,113 +3,98 @@
         <PlainNode.Plain>[global::kotlin.clr.KotlinFileClass]</PlainNode.Plain>
     </PlainNode.SingleLine>
     <CodeNode.SingleLine>
-        <PlainNode.Plain>public </PlainNode.Plain>
-        <PlainNode.Plain>static </PlainNode.Plain>
-        <PlainNode.Plain>class </PlainNode.Plain>
-        <PlainNode.Plain>MainKt</PlainNode.Plain>
+        <PlainNode.Plain>public static class MainKt</PlainNode.Plain>
     </CodeNode.SingleLine>
     <PaddingNode.Block>
+        <CodeNode.SingleLine>
+            <PlainNode.Plain>private static global::System.Double PI_backingField;</PlainNode.Plain>
+        </CodeNode.SingleLine>
+        <CodeNode.None />
+        <CodeNode.SingleLine>
+            <PlainNode.Plain>private static global::System.Int32 x_backingField;</PlainNode.Plain>
+        </CodeNode.SingleLine>
+        <CodeNode.None />
         <CodeNode.MultiLine>
             <CodeNode.SingleLine>
-                <PlainNode.Plain>public </PlainNode.Plain>
-                <PlainNode.Plain>static </PlainNode.Plain>
-                <PlainNode.Plain>void </PlainNode.Plain>
-                <PlainNode.Plain>main(</PlainNode.Plain>
-                <PlainNode.Plain></PlainNode.Plain>
-                <PlainNode.Plain>)</PlainNode.Plain>
+                <PlainNode.Plain>public static global::System.Double PI</PlainNode.Plain>
+            </CodeNode.SingleLine>
+            <PaddingNode.Block>
+                <CodeNode.MultiLine>
+                    <PlainNode.Plain>get</PlainNode.Plain>
+                    <PaddingNode.Block>
+                        <CodeNode.SingleLine>
+                            <PlainNode.Plain>return PI_backingField;</PlainNode.Plain>
+                        </CodeNode.SingleLine>
+                    </PaddingNode.Block>
+                </CodeNode.MultiLine>
+            </PaddingNode.Block>
+        </CodeNode.MultiLine>
+        <CodeNode.None />
+        <CodeNode.MultiLine>
+            <CodeNode.SingleLine>
+                <PlainNode.Plain>public static global::System.Int32 x</PlainNode.Plain>
+            </CodeNode.SingleLine>
+            <PaddingNode.Block>
+                <CodeNode.MultiLine>
+                    <PlainNode.Plain>get</PlainNode.Plain>
+                    <PaddingNode.Block>
+                        <CodeNode.SingleLine>
+                            <PlainNode.Plain>return x_backingField;</PlainNode.Plain>
+                        </CodeNode.SingleLine>
+                    </PaddingNode.Block>
+                    <PlainNode.Plain>set</PlainNode.Plain>
+                    <PaddingNode.Block>
+                        <CodeNode.SingleLine>
+                            <PlainNode.Plain>x_backingField = &lt;set-?&gt;;</PlainNode.Plain>
+                        </CodeNode.SingleLine>
+                    </PaddingNode.Block>
+                </CodeNode.MultiLine>
+            </PaddingNode.Block>
+        </CodeNode.MultiLine>
+        <CodeNode.None />
+        <CodeNode.MultiLine>
+            <CodeNode.SingleLine>
+                <PlainNode.Plain>public static void incrementX()</PlainNode.Plain>
             </CodeNode.SingleLine>
             <PaddingNode.Block>
                 <CodeNode.SingleLine>
-                    <PlainNode.Plain>global::System.Collections.Generic.IReadOnlyList&lt;global::System.String&gt;</PlainNode.Plain>
-                    <PlainNode.Plain> </PlainNode.Plain>
-                    <PlainNode.Plain>items</PlainNode.Plain>
-                    <PlainNode.Plain> = </PlainNode.Plain>
-                    <CodeNode.CodeList>
-                        <PlainNode.Plain>global::kotlin.collections.CollectionsKt</PlainNode.Plain>
-                        <PlainNode.Plain>.</PlainNode.Plain>
-                        <PlainNode.Plain>listOf</PlainNode.Plain>
-                        <PlainNode.Plain>(</PlainNode.Plain>
-                        <CodeNode.CodeList>
-                            <PlainNode.Plain>"apple"</PlainNode.Plain>
-                            <PlainNode.Plain>, </PlainNode.Plain>
-                            <PlainNode.Plain>"banana"</PlainNode.Plain>
-                            <PlainNode.Plain>, </PlainNode.Plain>
-                            <PlainNode.Plain>"kiwifruit"</PlainNode.Plain>
-                        </CodeNode.CodeList>
+                    <PlainNode.Plain>global::MainKt.x = (global::MainKt.x) + (1);</PlainNode.Plain>
+                </CodeNode.SingleLine>
+            </PaddingNode.Block>
+        </CodeNode.MultiLine>
+        <CodeNode.None />
+        <CodeNode.MultiLine>
+            <CodeNode.SingleLine>
+                <PlainNode.Plain>public static void main()</PlainNode.Plain>
+            </CodeNode.SingleLine>
+            <PaddingNode.Block>
+                <CodeNode.SingleLine>
+                    <CodeNode.SingleLineList>
+                        <PlainNode.Plain>global::kotlin.io.ConsoleKt.println(</PlainNode.Plain>
+                        <CodeNode.StringConcatenation>
+                            <PlainNode.Plain>"x = "</PlainNode.Plain>
+                            <PlainNode.Plain>global::MainKt.x</PlainNode.Plain>
+                            <PlainNode.Plain>", PI = "</PlainNode.Plain>
+                            <PlainNode.Plain>global::MainKt.PI</PlainNode.Plain>
+                        </CodeNode.StringConcatenation>
                         <PlainNode.Plain>)</PlainNode.Plain>
-                    </CodeNode.CodeList>
+                    </CodeNode.SingleLineList>
                     <PlainNode.Plain>;</PlainNode.Plain>
                 </CodeNode.SingleLine>
                 <CodeNode.SingleLine>
-                    <PaddingNode.BlockList>
-                        <CodeNode.SingleLine>
-                            <PlainNode.Plain>global::kotlin.collections.KotlinIterator&lt;global::System.String&gt;</PlainNode.Plain>
-                            <PlainNode.Plain> </PlainNode.Plain>
-                            <PlainNode.Plain>iterator</PlainNode.Plain>
-                            <PlainNode.Plain> = </PlainNode.Plain>
-                            <CodeNode.CodeList>
-                                <PlainNode.Plain>new global::kotlin.collections.KotlinIterator&lt;</PlainNode.Plain>
-                                <PlainNode.Plain>global::System.String</PlainNode.Plain>
-                                <PlainNode.Plain>&gt;(</PlainNode.Plain>
-                                <CodeNode.CodeList>
-                                    <PlainNode.Plain>items</PlainNode.Plain>
-                                    <PlainNode.Plain>.GetEnumerator()</PlainNode.Plain>
-                                </CodeNode.CodeList>
-                                <PlainNode.Plain>)</PlainNode.Plain>
-                            </CodeNode.CodeList>
-                            <PlainNode.Plain>;</PlainNode.Plain>
-                        </CodeNode.SingleLine>
-                        <CodeNode.SingleLine>
-                            <CodeNode.MultiLineList>
-                                <CodeNode.CodeList>
-                                    <PlainNode.Plain>while (</PlainNode.Plain>
-                                    <CodeNode.CodeList>
-                                        <PlainNode.Plain>iterator</PlainNode.Plain>
-                                        <PlainNode.Plain>.</PlainNode.Plain>
-                                        <PlainNode.Plain>hasNext</PlainNode.Plain>
-                                        <PlainNode.Plain>(</PlainNode.Plain>
-                                        <PlainNode.Plain>)</PlainNode.Plain>
-                                    </CodeNode.CodeList>
-                                    <PlainNode.Plain>)</PlainNode.Plain>
-                                </CodeNode.CodeList>
-                                <CodeNode.MultiLine>
-                                    <PaddingNode.BlockList>
-                                        <CodeNode.SingleLine>
-                                            <PlainNode.Plain>global::System.String</PlainNode.Plain>
-                                            <PlainNode.Plain> </PlainNode.Plain>
-                                            <PlainNode.Plain>item</PlainNode.Plain>
-                                            <PlainNode.Plain> = </PlainNode.Plain>
-                                            <CodeNode.CodeList>
-                                                <PlainNode.Plain>iterator</PlainNode.Plain>
-                                                <PlainNode.Plain>.</PlainNode.Plain>
-                                                <PlainNode.Plain>next</PlainNode.Plain>
-                                                <PlainNode.Plain>(</PlainNode.Plain>
-                                                <PlainNode.Plain>)</PlainNode.Plain>
-                                            </CodeNode.CodeList>
-                                            <PlainNode.Plain>;</PlainNode.Plain>
-                                        </CodeNode.SingleLine>
-                                        <CodeNode.SingleLine>
-                                            <PaddingNode.BlockList>
-                                                <CodeNode.SingleLine>
-                                                    <CodeNode.CodeList>
-                                                        <PlainNode.Plain>global::kotlin.io.ConsoleKt</PlainNode.Plain>
-                                                        <PlainNode.Plain>.</PlainNode.Plain>
-                                                        <PlainNode.Plain>println</PlainNode.Plain>
-                                                        <PlainNode.Plain>(</PlainNode.Plain>
-                                                        <PlainNode.Plain>item</PlainNode.Plain>
-                                                        <PlainNode.Plain>)</PlainNode.Plain>
-                                                    </CodeNode.CodeList>
-                                                    <PlainNode.Plain>;</PlainNode.Plain>
-                                                </CodeNode.SingleLine>
-                                            </PaddingNode.BlockList>
-                                            <PlainNode.Plain>;</PlainNode.Plain>
-                                        </CodeNode.SingleLine>
-                                    </PaddingNode.BlockList>
-                                </CodeNode.MultiLine>
-                            </CodeNode.MultiLineList>
-                            <PlainNode.Plain>;</PlainNode.Plain>
-                        </CodeNode.SingleLine>
-                    </PaddingNode.BlockList>
+                    <PlainNode.Plain>global::MainKt.incrementX();</PlainNode.Plain>
+                </CodeNode.SingleLine>
+                <CodeNode.SingleLine>
+                    <CodeNode.SingleLineList>
+                        <PlainNode.Plain>global::kotlin.io.ConsoleKt.println(</PlainNode.Plain>
+                        <CodeNode.StringConcatenation>
+                            <PlainNode.Plain>"x = "</PlainNode.Plain>
+                            <PlainNode.Plain>global::MainKt.x</PlainNode.Plain>
+                            <PlainNode.Plain>", PI = "</PlainNode.Plain>
+                            <PlainNode.Plain>global::MainKt.PI</PlainNode.Plain>
+                        </CodeNode.StringConcatenation>
+                        <PlainNode.Plain>)</PlainNode.Plain>
+                    </CodeNode.SingleLineList>
                     <PlainNode.Plain>;</PlainNode.Plain>
                 </CodeNode.SingleLine>
             </PaddingNode.Block>
@@ -117,23 +102,11 @@
         <CodeNode.None />
         <CodeNode.MultiLine>
             <CodeNode.SingleLine>
-                <PlainNode.Plain>public </PlainNode.Plain>
-                <PlainNode.Plain>static </PlainNode.Plain>
-                <PlainNode.Plain>void </PlainNode.Plain>
-                <PlainNode.Plain>Main(</PlainNode.Plain>
-                <PlainNode.Plain>global::System.String[] args</PlainNode.Plain>
-                <PlainNode.Plain>)</PlainNode.Plain>
+                <PlainNode.Plain>public static void Main(global::System.String[] args)</PlainNode.Plain>
             </CodeNode.SingleLine>
             <PaddingNode.Block>
                 <CodeNode.SingleLine>
-                    <CodeNode.CodeList>
-                        <PlainNode.Plain>global::MainKt</PlainNode.Plain>
-                        <PlainNode.Plain>.</PlainNode.Plain>
-                        <PlainNode.Plain>main</PlainNode.Plain>
-                        <PlainNode.Plain>(</PlainNode.Plain>
-                        <PlainNode.Plain>)</PlainNode.Plain>
-                    </CodeNode.CodeList>
-                    <PlainNode.Plain>;</PlainNode.Plain>
+                    <PlainNode.Plain>global::MainKt.main();</PlainNode.Plain>
                 </CodeNode.SingleLine>
             </PaddingNode.Block>
         </CodeNode.MultiLine>

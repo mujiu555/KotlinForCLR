@@ -104,3 +104,29 @@ fun CodeNode.pushSingleLine(vararg appends: CodeNode) = when (this) {
 	is CodeNode.SingleLine -> singleLineCode(*appends, *nodes.toTypedArray())
 	else -> singleLineCode(*appends, this)
 }
+
+fun CodeNode.appendSingleLineList(vararg appends: CodeNode) = when (this) {
+	is CodeNode.SingleLineList -> singleLineListCode(*nodes.toTypedArray(), *appends)
+	else -> singleLineListCode(this, *appends)
+}
+
+fun CodeNode.pushSingleLineList(vararg appends: CodeNode) = when (this) {
+	is CodeNode.SingleLineList -> singleLineListCode(*appends, *nodes.toTypedArray())
+	else -> singleLineListCode(*appends, this)
+}
+
+fun CodeNode.toPadding() = when (this) {
+	is CodeNode.MultiLine -> this
+	is CodeNode.MultiLineList -> multiLineCode(nodes)
+	CodeNode.None -> singleLineCode(this)
+	is CodeNode.SingleLine -> this
+	is CodeNode.SingleLineList -> singleLineCode(nodes)
+	is CodeNode.StringConcatenation -> singleLineCode(this)
+	is PaddingNode.Block -> this
+	is PaddingNode.BlockList -> blockPadding(nodes)
+	is PaddingNode.If -> singleLineCode(this)
+	is PaddingNode.IfExp -> singleLineCode(this)
+	is PlainNode.MultiLine -> singleLineCode(this)
+	is PlainNode.Plain -> singleLineCode(this)
+	is PlainNode.SingleLine -> singleLineCode(this)
+}

@@ -1,6 +1,12 @@
+val PI = 3.14
+var x = 0
+
+fun incrementX() {
+	x += 1
+}
+
 fun main() {
-	val items = listOf("apple", "banana", "kiwifruit")
-	for (item in items) {
-		println(item)
-	}
+	println("x = $x, PI = $PI")
+	incrementX()
+	println("x = $x, PI = $PI")
 }

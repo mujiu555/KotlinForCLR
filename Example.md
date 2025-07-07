@@ -1,13 +1,17 @@
 # KFC vivo 50
 
 ```kotlin
+import System.Console
+
 fun main() {
     KFC vivo 50
 }
 
 object KFC
 
-infix fun KFC.vivo(value: Int) {}
+infix fun KFC.vivo(value: Int) {
+    Console.WriteLine("KFC vivo $value")
+}
 ```
 
 ```c#
@@ -32,7 +36,7 @@ public static class MainKt
     [global::kotlin.clr.KotlinExtension]
     public static void vivo(global::KFC receiver, global::System.Int32 value)
     {
-
+        global::System.Console.WriteLine($"{("KFC vivo ")}{(value)}");
     }
 
     public static void Main(global::System.String[] args)
@@ -128,7 +132,7 @@ public static class MainKt
 }
 ```
 
-# [Variables](https://kotlinlang.org/docs/basic-syntax.html#variables)
+# [Variables](https://kotlinlang.org/docs/basic-syntax.html#variables) **Errpr**
 
 ```kotlin
 val PI = 3.14
@@ -149,15 +153,28 @@ fun main() {
 [global::kotlin.clr.KotlinFileClass]
 public static class MainKt
 {
+    private static global::System.Double PI_backingField;
+
+    private static global::System.Int32 x_backingField;
+
     public static global::System.Double PI
     {
-        get;
+        get
+        {
+            return PI_backingField;
+        }
     }
 
     public static global::System.Int32 x
     {
-        get;
-        set;
+        get
+        {
+            return x_backingField;
+        }
+        set
+        {
+            x_backingField = <set-?>;
+        }
     }
 
     public static void incrementX()
@@ -202,24 +219,39 @@ public sealed class Rectangle : global::Shape
 {
     public Rectangle(global::System.Double height, global::System.Double length) : base()
     {
-        this.height = height;
-        this.length = length;
-        this.perimeter = ((this.height) + (this.length)) * (2);
+        this.height_backingField = height;
+        this.length_backingField = length;
+        this.perimeter_backingField = ((this.height) + (this.length)) * (2);
     }
+
+    private global::System.Double height_backingField;
+
+    private global::System.Double length_backingField;
+
+    private global::System.Double perimeter_backingField;
 
     public global::System.Double height
     {
-        get;
+        get
+        {
+            return this.height_backingField;
+        }
     }
 
     public global::System.Double length
     {
-        get;
+        get
+        {
+            return this.length_backingField;
+        }
     }
 
     public global::System.Double perimeter
     {
-        get;
+        get
+        {
+            return this.perimeter_backingField;
+        }
     }
 }
 ```
@@ -321,7 +353,7 @@ public static class MainKt
 {
     public static void main()
     {
-        global::System.Collections.Generic.IReadOnlyList<global::System.String> items = global::kotlin.collections.CollectionsKt.listOf("apple", "banana", "kiwifruit");
+        global::System.Collections.Generic.IReadOnlyList<global::System.String> items = global::kotlin.collections.CollectionsKt.listOf<global::System.String>("apple", "banana", "kiwifruit");
         {
             global::kotlin.collections.KotlinIterator<global::System.String> iterator = new global::kotlin.collections.KotlinIterator<global::System.String>(items.GetEnumerator());
             while (iterator.hasNext())
@@ -332,6 +364,160 @@ public static class MainKt
                 };
             };
         };
+    }
+
+    public static void Main(global::System.String[] args)
+    {
+        global::MainKt.main();
+    }
+}
+```
+
+# 群 U 提供
+
+```kotlin
+fun func(list: List<String>) {
+    println("123")
+}
+
+fun main() {
+    func(listOf<String>())
+}
+```
+
+```c#
+[global::kotlin.clr.KotlinFileClass]
+public static class MainKt
+{
+    public static void func(global::System.Collections.Generic.IReadOnlyList<global::System.String> list)
+    {
+        global::kotlin.io.ConsoleKt.println("123");
+    }
+
+    public static void main()
+    {
+        global::MainKt.func(global::kotlin.collections.CollectionsKt.listOf<global::System.String>());
+    }
+
+    public static void Main(global::System.String[] args)
+    {
+        global::MainKt.main();
+    }
+}
+```
+
+```kotlin
+class A(val a: String)
+
+fun main() {
+    val a = A("1")
+    println(a.a)
+}
+```
+
+```c#
+public sealed class A : global::System.Object
+{
+    public A(global::System.String a) : base()
+    {
+        this.a_backingField = a;
+    }
+
+    private global::System.String a_backingField;
+
+    public global::System.String a
+    {
+        get
+        {
+            return this.a_backingField;
+        }
+    }
+}
+
+[global::kotlin.clr.KotlinFileClass]
+public static class MainKt
+{
+    public static void main()
+    {
+        global::A a = new global::A("1");
+        global::kotlin.io.ConsoleKt.println(a.a);
+    }
+
+    public static void Main(global::System.String[] args)
+    {
+        global::MainKt.main();
+    }
+}
+```
+
+```kotlin
+fun main() {
+    println(Any())
+}
+```
+
+```c#
+[global::kotlin.clr.KotlinFileClass]
+public static class MainKt
+{
+    public static void main()
+    {
+        global::kotlin.io.ConsoleKt.println(new global::System.Object());
+    }
+
+    public static void Main(global::System.String[] args)
+    {
+        global::MainKt.main();
+    }
+}
+```
+
+```kotlin
+class A {
+    var a: String = ""
+        set(value) {
+            println("$field -> $value")
+            field = value
+        }
+}
+
+fun main() {
+    val a = A()
+    a.a = "123"
+}
+```
+
+```c#
+public sealed class A : global::System.Object
+{
+    public A() : base()
+    {
+        this.a_backingField = "";
+    }
+
+    private global::System.String a_backingField;
+
+    public global::System.String a
+    {
+        get
+        {
+            return this.a_backingField;
+        }
+        set
+        {
+            global::kotlin.io.ConsoleKt.println($"{(this.a_backingField)}{(" -> ")}{(value)}");
+            this.a_backingField = value;
+        }
+    }
+}
+
+[global::kotlin.clr.KotlinFileClass]
+public static class MainKt
+{
+    public static void main()
+    {
+        global::A a = new global::A();
+        a.a = "123";
     }
 
     public static void Main(global::System.String[] args)

@@ -7,6 +7,7 @@
 这是一个 Kotlin/CLR 编译器, 旨在将 Kotlin 代码编译为 .NET CIL, 使得 Kotlin 开发者可以在 .NET 平台上使用 Kotlin 语言进行开发
 
 [更多介绍](https://juejin.cn/post/7512779184029679666)<br>
+[深圳 KUG 演讲](https://www.bilibili.com/video/BV1EF3RzwE4j)<br>
 [交流群](https://qm.qq.com/q/ed5aIJqOrK)
 
 ## 项目结构
