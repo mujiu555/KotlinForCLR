@@ -435,12 +435,8 @@ class ClassCodegen(val context: ClrBackendContext) {
 			val constructedClass = symbol.owner.parent as IrClass
 			val packageFragment = constructedClass.getPackageFragment()
 
-			add(plainPlain("new global::"))
-			if (!packageFragment.packageFqName.isRoot) {
-				add(plainPlain(packageFragment.packageFqName.visit()))
-				add(plainPlain("."))
-			}
-			add(plainPlain(constructedClass.name.visit()))
+			add(plainPlain("new "))
+			add(plainPlain(typeMapper.mapType(constructedClass.defaultType)))
 			add(plainPlain("("))
 			valueArguments
 				.filterNotNull()
