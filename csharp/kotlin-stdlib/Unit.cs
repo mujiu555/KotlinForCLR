@@ -20,9 +20,11 @@ namespace kotlin;
 
 [KotlinObject]
 public sealed class Unit {
+	[KotlinNotNull]
 	public static readonly Unit INSTANCE = new();
 
 	private Unit() { }
 
+	[KotlinNotNull]
 	public override string ToString() => "kotlin.Unit";
 }

@@ -14,10 +14,16 @@
    limitations under the License.
  */
 
+using kotlin.clr;
+
 namespace kotlin.reflect;
 
 public interface KType {
 	public KClassifier? classifier { get; }
+	
+	[KotlinNotNull]
 	public List<KTypeProjection> arguments { get; }
+	
+	[KotlinNotNull]
 	public bool isMarkedNullable { get; }
 }

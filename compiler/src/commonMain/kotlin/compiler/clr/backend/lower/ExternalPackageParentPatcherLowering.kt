@@ -26,7 +26,7 @@ import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.expressions.IrMemberAccessExpression
 import org.jetbrains.kotlin.ir.symbols.UnsafeDuringIrConstructionAPI
 import org.jetbrains.kotlin.ir.util.createThisReceiverParameter
-import org.jetbrains.kotlin.ir.visitors.IrElementVisitorVoid
+import org.jetbrains.kotlin.ir.visitors.IrVisitorVoid
 import org.jetbrains.kotlin.ir.visitors.acceptChildrenVoid
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
 import org.jetbrains.kotlin.load.kotlin.FacadeClassSource
@@ -37,7 +37,7 @@ internal class ExternalPackageParentPatcherLowering(val context: ClrBackendConte
 		irFile.acceptVoid(Visitor())
 	}
 
-	private inner class Visitor : IrElementVisitorVoid {
+	private inner class Visitor : IrVisitorVoid() {
 		override fun visitElement(element: IrElement) {
 			element.acceptChildrenVoid(this)
 		}

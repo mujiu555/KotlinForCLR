@@ -6,103 +6,23 @@
         <PlainNode.Plain>public static class MainKt</PlainNode.Plain>
     </CodeNode.SingleLine>
     <PaddingNode.Block>
-        <CodeNode.SingleLine>
-            <PlainNode.Plain>private static global::System.Double PI_backingField;</PlainNode.Plain>
-        </CodeNode.SingleLine>
-        <CodeNode.None />
-        <CodeNode.SingleLine>
-            <PlainNode.Plain>private static global::System.Int32 x_backingField;</PlainNode.Plain>
-        </CodeNode.SingleLine>
-        <CodeNode.None />
-        <CodeNode.MultiLine>
-            <CodeNode.SingleLine>
-                <PlainNode.Plain>public static global::System.Double PI</PlainNode.Plain>
-            </CodeNode.SingleLine>
-            <PaddingNode.Block>
-                <CodeNode.MultiLine>
-                    <PlainNode.Plain>get</PlainNode.Plain>
-                    <PaddingNode.Block>
-                        <CodeNode.SingleLine>
-                            <PlainNode.Plain>return PI_backingField;</PlainNode.Plain>
-                        </CodeNode.SingleLine>
-                    </PaddingNode.Block>
-                </CodeNode.MultiLine>
-            </PaddingNode.Block>
-        </CodeNode.MultiLine>
-        <CodeNode.None />
-        <CodeNode.MultiLine>
-            <CodeNode.SingleLine>
-                <PlainNode.Plain>public static global::System.Int32 x</PlainNode.Plain>
-            </CodeNode.SingleLine>
-            <PaddingNode.Block>
-                <CodeNode.MultiLine>
-                    <PlainNode.Plain>get</PlainNode.Plain>
-                    <PaddingNode.Block>
-                        <CodeNode.SingleLine>
-                            <PlainNode.Plain>return x_backingField;</PlainNode.Plain>
-                        </CodeNode.SingleLine>
-                    </PaddingNode.Block>
-                    <PlainNode.Plain>set</PlainNode.Plain>
-                    <PaddingNode.Block>
-                        <CodeNode.SingleLine>
-                            <PlainNode.Plain>x_backingField = value;</PlainNode.Plain>
-                        </CodeNode.SingleLine>
-                    </PaddingNode.Block>
-                </CodeNode.MultiLine>
-            </PaddingNode.Block>
-        </CodeNode.MultiLine>
-        <CodeNode.None />
-        <CodeNode.MultiLine>
-            <CodeNode.SingleLine>
-                <PlainNode.Plain>public static void incrementX()</PlainNode.Plain>
-            </CodeNode.SingleLine>
-            <PaddingNode.Block>
-                <CodeNode.SingleLine>
-                    <PlainNode.Plain>global::MainKt.x = (global::MainKt.x) + (1);</PlainNode.Plain>
-                </CodeNode.SingleLine>
-            </PaddingNode.Block>
-        </CodeNode.MultiLine>
-        <CodeNode.None />
         <CodeNode.MultiLine>
             <CodeNode.SingleLine>
                 <PlainNode.Plain>public static void main()</PlainNode.Plain>
             </CodeNode.SingleLine>
             <PaddingNode.Block>
                 <CodeNode.SingleLine>
-                    <CodeNode.SingleLineList>
-                        <PlainNode.Plain>global::kotlin.io.ConsoleKt.println(</PlainNode.Plain>
-                        <CodeNode.StringConcatenation>
-                            <PlainNode.Plain>"x = "</PlainNode.Plain>
-                            <PlainNode.Plain>global::MainKt.x</PlainNode.Plain>
-                            <PlainNode.Plain>", PI = "</PlainNode.Plain>
-                            <PlainNode.Plain>global::MainKt.PI</PlainNode.Plain>
-                        </CodeNode.StringConcatenation>
-                        <PlainNode.Plain>)</PlainNode.Plain>
-                    </CodeNode.SingleLineList>
-                    <PlainNode.Plain>;</PlainNode.Plain>
+                    <PlainNode.Plain>global::System.String? a = null;</PlainNode.Plain>
                 </CodeNode.SingleLine>
                 <CodeNode.SingleLine>
-                    <PlainNode.Plain>global::MainKt.incrementX();</PlainNode.Plain>
-                </CodeNode.SingleLine>
-                <CodeNode.SingleLine>
-                    <CodeNode.SingleLineList>
-                        <PlainNode.Plain>global::kotlin.io.ConsoleKt.println(</PlainNode.Plain>
-                        <CodeNode.StringConcatenation>
-                            <PlainNode.Plain>"x = "</PlainNode.Plain>
-                            <PlainNode.Plain>global::MainKt.x</PlainNode.Plain>
-                            <PlainNode.Plain>", PI = "</PlainNode.Plain>
-                            <PlainNode.Plain>global::MainKt.PI</PlainNode.Plain>
-                        </CodeNode.StringConcatenation>
-                        <PlainNode.Plain>)</PlainNode.Plain>
-                    </CodeNode.SingleLineList>
-                    <PlainNode.Plain>;</PlainNode.Plain>
+                    <PlainNode.Plain>global::kotlin.io.ConsoleKt.println(a);</PlainNode.Plain>
                 </CodeNode.SingleLine>
             </PaddingNode.Block>
         </CodeNode.MultiLine>
         <CodeNode.None />
         <CodeNode.MultiLine>
             <CodeNode.SingleLine>
-                <PlainNode.Plain>public static void Main(global::System.String[] args)</PlainNode.Plain>
+                <PlainNode.Plain>public static void Main([global::kotlin.clr.KotlinNotNull] global::System.String[] args)</PlainNode.Plain>
             </CodeNode.SingleLine>
             <PaddingNode.Block>
                 <CodeNode.SingleLine>

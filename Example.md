@@ -17,6 +17,7 @@ infix fun KFC.vivo(value: Int) {
 ```c#
 public sealed class KFC : global::System.Object
 {
+    [global::kotlin.clr.KotlinNotNull]
     public static global::KFC INSTANCE { get; } = new global::KFC();
 
     private KFC() : base()
@@ -34,12 +35,12 @@ public static class MainKt
     }
 
     [global::kotlin.clr.KotlinExtension]
-    public static void vivo(global::KFC receiver, global::System.Int32 value)
+    public static void vivo([global::kotlin.clr.KotlinNotNull] global::KFC receiver, [global::kotlin.clr.KotlinNotNull] global::System.Int32 value)
     {
         global::System.Console.WriteLine($"{("KFC vivo ")}{(value)}");
     }
 
-    public static void Main(global::System.String[] args)
+    public static void Main([global::kotlin.clr.KotlinNotNull] global::System.String[] args)
     {
         global::MainKt.main();
     }
@@ -75,7 +76,7 @@ public static class MainKt
         global::kotlin.io.ConsoleKt.print(yourWord);
     }
 
-    public static void Main(global::System.String[] args)
+    public static void Main([global::kotlin.clr.KotlinNotNull] global::System.String[] args)
     {
         global::MainKt.main();
     }
@@ -103,12 +104,13 @@ public static class MainKt
         global::kotlin.io.ConsoleKt.println($"{("sum(1, 2) = ")}{(global::MainKt.sum(1, 2))}");
     }
 
-    public static global::System.Int32 sum(global::System.Int32 a, global::System.Int32 b)
+    [global::kotlin.clr.KotlinNotNull]
+    public static global::System.Int32 sum([global::kotlin.clr.KotlinNotNull] global::System.Int32 a, [global::kotlin.clr.KotlinNotNull] global::System.Int32 b)
     {
         return (a) + (b);
     }
 
-    public static void Main(global::System.String[] args)
+    public static void Main([global::kotlin.clr.KotlinNotNull] global::System.String[] args)
     {
         global::MainKt.main();
     }
@@ -125,7 +127,7 @@ fun printSum(a: Int, b: Int): Unit {
 [global::kotlin.clr.KotlinFileClass]
 public static class MainKt
 {
-    public static void printSum(global::System.Int32 a, global::System.Int32 b)
+    public static void printSum([global::kotlin.clr.KotlinNotNull] global::System.Int32 a, [global::kotlin.clr.KotlinNotNull] global::System.Int32 b)
     {
         global::kotlin.io.ConsoleKt.println($"{("sum of ")}{(a)}{(" and ")}{(b)}{(" is ")}{((a) + (b))}");
     }
@@ -153,10 +155,13 @@ fun main() {
 [global::kotlin.clr.KotlinFileClass]
 public static class MainKt
 {
+    [global::kotlin.clr.KotlinNotNull]
     private static global::System.Double PI_backingField;
 
+    [global::kotlin.clr.KotlinNotNull]
     private static global::System.Int32 x_backingField;
 
+    [global::kotlin.clr.KotlinNotNull]
     public static global::System.Double PI
     {
         get
@@ -165,6 +170,7 @@ public static class MainKt
         }
     }
 
+    [global::kotlin.clr.KotlinNotNull]
     public static global::System.Int32 x
     {
         get
@@ -189,7 +195,7 @@ public static class MainKt
         global::kotlin.io.ConsoleKt.println($"{("x = ")}{(global::MainKt.x)}{(", PI = ")}{(global::MainKt.PI)}");
     }
 
-    public static void Main(global::System.String[] args)
+    public static void Main([global::kotlin.clr.KotlinNotNull] global::System.String[] args)
     {
         global::MainKt.main();
     }
@@ -217,19 +223,23 @@ public class Shape : global::System.Object
 
 public sealed class Rectangle : global::Shape
 {
-    public Rectangle(global::System.Double height, global::System.Double length) : base()
+    public Rectangle([global::kotlin.clr.KotlinNotNull] global::System.Double height, [global::kotlin.clr.KotlinNotNull] global::System.Double length) : base()
     {
         this.height_backingField = height;
         this.length_backingField = length;
         this.perimeter_backingField = ((this.height) + (this.length)) * (2);
     }
 
+    [global::kotlin.clr.KotlinNotNull]
     private global::System.Double height_backingField;
 
+    [global::kotlin.clr.KotlinNotNull]
     private global::System.Double length_backingField;
 
+    [global::kotlin.clr.KotlinNotNull]
     private global::System.Double perimeter_backingField;
 
+    [global::kotlin.clr.KotlinNotNull]
     public global::System.Double height
     {
         get
@@ -238,6 +248,7 @@ public sealed class Rectangle : global::Shape
         }
     }
 
+    [global::kotlin.clr.KotlinNotNull]
     public global::System.Double length
     {
         get
@@ -246,6 +257,7 @@ public sealed class Rectangle : global::Shape
         }
     }
 
+    [global::kotlin.clr.KotlinNotNull]
     public global::System.Double perimeter
     {
         get
@@ -282,7 +294,7 @@ public static class MainKt
         global::System.String s2 = $"{(global::kotlin.text.TextH.replace(s1, "is", "was"))}{(", but now is ")}{(a)}";
     }
 
-    public static void Main(global::System.String[] args)
+    public static void Main([global::kotlin.clr.KotlinNotNull] global::System.String[] args)
     {
         global::MainKt.main();
     }
@@ -305,7 +317,8 @@ fun maxOf(a: Int, b: Int): Int {
 [global::kotlin.clr.KotlinFileClass]
 public static class MainKt
 {
-    public static global::System.Int32 maxOf(global::System.Int32 a, global::System.Int32 b)
+    [global::kotlin.clr.KotlinNotNull]
+    public static global::System.Int32 maxOf([global::kotlin.clr.KotlinNotNull] global::System.Int32 a, [global::kotlin.clr.KotlinNotNull] global::System.Int32 b)
     {
         if ((a) > (b))
         {
@@ -327,7 +340,8 @@ fun maxOf(a: Int, b: Int) = if (a > b) a else b
 [global::kotlin.clr.KotlinFileClass]
 public static class MainKt
 {
-    public static global::System.Int32 maxOf(global::System.Int32 a, global::System.Int32 b)
+    [global::kotlin.clr.KotlinNotNull]
+    public static global::System.Int32 maxOf([global::kotlin.clr.KotlinNotNull] global::System.Int32 a, [global::kotlin.clr.KotlinNotNull] global::System.Int32 b)
     {
         return ((a) > (b))
             ? (a)
@@ -353,12 +367,12 @@ public static class MainKt
 {
     public static void main()
     {
-        global::System.Collections.Generic.IReadOnlyList<global::System.String> items = global::kotlin.collections.CollectionsKt.listOf<global::System.String>("apple", "banana", "kiwifruit");
+        global::System.Collections.Generic.IReadOnlyList<global::System.String?> items = global::kotlin.collections.CollectionsKt.listOf<[global::kotlin.clr.KotlinNotNull] global::System.String>("apple", "banana", "kiwifruit");
         {
-            global::kotlin.collections.KotlinIterator<global::System.String> iterator = new global::kotlin.collections.KotlinIterator<global::System.String>(items.GetEnumerator());
+            global::kotlin.collections.KotlinIterator<global::System.String?> iterator = new global::kotlin.collections.KotlinIterator<global::System.String?>(items.GetEnumerator());
             while (iterator.hasNext())
             {
-                global::System.String item = iterator.next();
+                global::System.String? item = iterator.next();
                 {
                     global::kotlin.io.ConsoleKt.println(item);
                 };
@@ -366,7 +380,7 @@ public static class MainKt
         };
     }
 
-    public static void Main(global::System.String[] args)
+    public static void Main([global::kotlin.clr.KotlinNotNull] global::System.String[] args)
     {
         global::MainKt.main();
     }
@@ -389,7 +403,7 @@ fun main() {
 [global::kotlin.clr.KotlinFileClass]
 public static class MainKt
 {
-    public static void func(global::System.Collections.Generic.IReadOnlyList<global::System.String> list)
+    public static void func([global::kotlin.clr.KotlinNotNull] global::System.Collections.Generic.IReadOnlyList<global::System.String> list)
     {
         global::kotlin.io.ConsoleKt.println("123");
     }
@@ -399,7 +413,7 @@ public static class MainKt
         global::MainKt.func(global::kotlin.collections.CollectionsKt.listOf<global::System.String>());
     }
 
-    public static void Main(global::System.String[] args)
+    public static void Main([global::kotlin.clr.KotlinNotNull] global::System.String[] args)
     {
         global::MainKt.main();
     }
@@ -418,13 +432,15 @@ fun main() {
 ```c#
 public sealed class A : global::System.Object
 {
-    public A(global::System.String a) : base()
+    public A([global::kotlin.clr.KotlinNotNull] global::System.String a) : base()
     {
         this.a_backingField = a;
     }
 
+    [global::kotlin.clr.KotlinNotNull]
     private global::System.String a_backingField;
 
+    [global::kotlin.clr.KotlinNotNull]
     public global::System.String a
     {
         get
@@ -443,7 +459,7 @@ public static class MainKt
         global::kotlin.io.ConsoleKt.println(a.a);
     }
 
-    public static void Main(global::System.String[] args)
+    public static void Main([global::kotlin.clr.KotlinNotNull] global::System.String[] args)
     {
         global::MainKt.main();
     }
@@ -465,7 +481,7 @@ public static class MainKt
         global::kotlin.io.ConsoleKt.println(new global::System.Object());
     }
 
-    public static void Main(global::System.String[] args)
+    public static void Main([global::kotlin.clr.KotlinNotNull] global::System.String[] args)
     {
         global::MainKt.main();
     }
@@ -495,8 +511,10 @@ public sealed class A : global::System.Object
         this.a_backingField = "";
     }
 
+    [global::kotlin.clr.KotlinNotNull]
     private global::System.String a_backingField;
 
+    [global::kotlin.clr.KotlinNotNull]
     public global::System.String a
     {
         get
@@ -520,7 +538,31 @@ public static class MainKt
         a.a = "123";
     }
 
-    public static void Main(global::System.String[] args)
+    public static void Main([global::kotlin.clr.KotlinNotNull] global::System.String[] args)
+    {
+        global::MainKt.main();
+    }
+}
+```
+
+```kotlin
+fun main() {
+    val a: String? = null
+    println(a)
+}
+```
+
+```c#
+[global::kotlin.clr.KotlinFileClass]
+public static class MainKt
+{
+    public static void main()
+    {
+        global::System.String? a = null;
+        global::kotlin.io.ConsoleKt.println(a);
+    }
+
+    public static void Main([global::kotlin.clr.KotlinNotNull] global::System.String[] args)
     {
         global::MainKt.main();
     }

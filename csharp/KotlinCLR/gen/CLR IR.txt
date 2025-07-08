@@ -2,51 +2,13 @@ MODULE_FRAGMENT name:<main>
   FILE fqName:<root> fileName:C:/Users/Yurin/IdeaProjects/KotlinForCLR/kotlin/src/Main.kt
     CLASS FILE_CLASS CLASS name:MainKt modality:FINAL visibility:public superTypes:[kotlin.Any]
       $this: VALUE_PARAMETER INSTANCE_RECEIVER name:<this> type:<root>.MainKt
-      PROPERTY name:PI visibility:public modality:FINAL [val]
-        FIELD PROPERTY_BACKING_FIELD name:PI type:kotlin.Double visibility:private [final,static]
-          EXPRESSION_BODY
-            CONST Double type=kotlin.Double value=3.14
-        FUN DEFAULT_PROPERTY_ACCESSOR name:<get-PI> visibility:public modality:FINAL <> () returnType:kotlin.Double
-          correspondingProperty: PROPERTY name:PI visibility:public modality:FINAL [val]
-          BLOCK_BODY
-            RETURN type=kotlin.Nothing from='public final fun <get-PI> (): kotlin.Double declared in <root>.MainKt'
-              GET_FIELD 'FIELD PROPERTY_BACKING_FIELD name:PI type:kotlin.Double visibility:private [final,static]' type=kotlin.Double origin=null
-      PROPERTY name:x visibility:public modality:FINAL [var]
-        FIELD PROPERTY_BACKING_FIELD name:x type:kotlin.Int visibility:private [static]
-          EXPRESSION_BODY
-            CONST Int type=kotlin.Int value=0
-        FUN DEFAULT_PROPERTY_ACCESSOR name:<get-x> visibility:public modality:FINAL <> () returnType:kotlin.Int
-          correspondingProperty: PROPERTY name:x visibility:public modality:FINAL [var]
-          BLOCK_BODY
-            RETURN type=kotlin.Nothing from='public final fun <get-x> (): kotlin.Int declared in <root>.MainKt'
-              GET_FIELD 'FIELD PROPERTY_BACKING_FIELD name:x type:kotlin.Int visibility:private [static]' type=kotlin.Int origin=null
-        FUN DEFAULT_PROPERTY_ACCESSOR name:<set-x> visibility:public modality:FINAL <> (<set-?>:kotlin.Int) returnType:kotlin.Unit
-          correspondingProperty: PROPERTY name:x visibility:public modality:FINAL [var]
-          VALUE_PARAMETER name:<set-?> index:0 type:kotlin.Int
-          BLOCK_BODY
-            SET_FIELD 'FIELD PROPERTY_BACKING_FIELD name:x type:kotlin.Int visibility:private [static]' type=kotlin.Unit origin=null
-              value: GET_VAR '<set-?>: kotlin.Int declared in <root>.MainKt.<set-x>' type=kotlin.Int origin=null
-      FUN name:incrementX visibility:public modality:FINAL <> () returnType:kotlin.Unit
-        BLOCK_BODY
-          CALL 'public final fun <set-x> (<set-?>: kotlin.Int): kotlin.Unit declared in <root>.MainKt' type=kotlin.Unit origin=PLUSEQ
-            <set-?>: CALL 'public final fun plus (other: kotlin.Int): kotlin.Int [operator] declared in kotlin.Int' type=kotlin.Int origin=PLUSEQ
-              $this: CALL 'public final fun <get-x> (): kotlin.Int declared in <root>.MainKt' type=kotlin.Int origin=PLUSEQ
-              other: CONST Int type=kotlin.Int value=1
       FUN name:main visibility:public modality:FINAL <> () returnType:kotlin.Unit
         BLOCK_BODY
-          CALL 'public final fun println (message: kotlin.Any): kotlin.Unit declared in kotlin.io.ConsoleKt' type=kotlin.Unit origin=null
-            message: STRING_CONCATENATION type=kotlin.String
-              CONST String type=kotlin.String value="x = "
-              CALL 'public final fun <get-x> (): kotlin.Int declared in <root>.MainKt' type=kotlin.Int origin=GET_PROPERTY
-              CONST String type=kotlin.String value=", PI = "
-              CALL 'public final fun <get-PI> (): kotlin.Double declared in <root>.MainKt' type=kotlin.Double origin=GET_PROPERTY
-          CALL 'public final fun incrementX (): kotlin.Unit declared in <root>.MainKt' type=kotlin.Unit origin=null
-          CALL 'public final fun println (message: kotlin.Any): kotlin.Unit declared in kotlin.io.ConsoleKt' type=kotlin.Unit origin=null
-            message: STRING_CONCATENATION type=kotlin.String
-              CONST String type=kotlin.String value="x = "
-              CALL 'public final fun <get-x> (): kotlin.Int declared in <root>.MainKt' type=kotlin.Int origin=GET_PROPERTY
-              CONST String type=kotlin.String value=", PI = "
-              CALL 'public final fun <get-PI> (): kotlin.Double declared in <root>.MainKt' type=kotlin.Double origin=GET_PROPERTY
+          VAR name:a type:kotlin.String? [val]
+            CONST Null type=kotlin.Nothing? value=null
+          TYPE_OP type=kotlin.Unit origin=IMPLICIT_COERCION_TO_UNIT typeOperand=kotlin.Unit
+            CALL 'public final fun println (message: kotlin.Any?): kotlin.Unit? declared in kotlin.io.ConsoleKt' type=kotlin.Unit? origin=null
+              message: GET_VAR 'val a: kotlin.String? [val] declared in <root>.MainKt.main' type=kotlin.String? origin=null
       FUN GENERATED_EXTENDED_MAIN name:Main visibility:public modality:OPEN <> (args:kotlin.Array<kotlin.String>) returnType:kotlin.Unit
         VALUE_PARAMETER name:args index:0 type:kotlin.Array<kotlin.String>
         BLOCK_BODY

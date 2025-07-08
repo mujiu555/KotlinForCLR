@@ -1,15 +1,6 @@
 FILE: Main.kt
-    public? final? val PI: <implicit> = Double(3.14)
-        public? get(): <implicit>
-    public? final? var x: <implicit> = IntegerLiteral(0)
-        public? get(): <implicit>
-        public? set(value: <implicit>): R|kotlin/Unit|
-    public? final? fun incrementX(): R|kotlin/Unit| {
-        +=(x#, IntegerLiteral(1))
-    }
     public? final? fun main(): R|kotlin/Unit| {
-        println#(<strcat>(String(x = ), x#, String(, PI = ), PI#))
-        incrementX#()
-        println#(<strcat>(String(x = ), x#, String(, PI = ), PI#))
+        lval a: String? = Null(null)
+        println#(a#)
     }
 

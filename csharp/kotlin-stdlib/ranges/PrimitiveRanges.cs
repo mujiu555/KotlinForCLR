@@ -14,19 +14,27 @@
    limitations under the License.
  */
 
+using kotlin.clr;
+
 namespace kotlin.ranges;
 
 public sealed class CharRange(
+	[KotlinNotNull]
 	char start,
+	[KotlinNotNull]
 	char endInclusive
 ) : CharProgression(start, endInclusive, 1), ClosedRange, OpenEndRange;
 
 public sealed class IntRange(
+	[KotlinNotNull]
 	int start,
+	[KotlinNotNull]
 	int endInclusive
 ) : IntProgression(start, endInclusive, 1), ClosedRange, OpenEndRange;
 
 public sealed class LongRange(
+	[KotlinNotNull]
 	long start,
+	[KotlinNotNull]
 	long endInclusive
 ) : LongProgression(start, endInclusive, 1), ClosedRange, OpenEndRange;

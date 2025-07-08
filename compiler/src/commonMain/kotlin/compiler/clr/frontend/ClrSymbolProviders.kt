@@ -27,8 +27,10 @@ import org.jetbrains.kotlin.fir.declarations.FirDeclarationOrigin
 import org.jetbrains.kotlin.fir.declarations.builder.*
 import org.jetbrains.kotlin.fir.declarations.impl.FirDeclarationStatusImpl
 import org.jetbrains.kotlin.fir.declarations.impl.FirResolvedDeclarationStatusImpl
+import org.jetbrains.kotlin.fir.expressions.UnresolvedExpressionTypeAccess
 import org.jetbrains.kotlin.fir.expressions.builder.buildAnnotation
 import org.jetbrains.kotlin.fir.expressions.impl.FirEmptyAnnotationArgumentMapping
+import org.jetbrains.kotlin.fir.resolve.defaultType
 import org.jetbrains.kotlin.fir.resolve.dfa.cfg.FirStub
 import org.jetbrains.kotlin.fir.resolve.providers.FirSymbolNamesProvider
 import org.jetbrains.kotlin.fir.resolve.providers.FirSymbolProvider
@@ -37,13 +39,10 @@ import org.jetbrains.kotlin.fir.scopes.FirKotlinScopeProvider
 import org.jetbrains.kotlin.fir.scopes.kotlinScopeProvider
 import org.jetbrains.kotlin.fir.symbols.SymbolInternals
 import org.jetbrains.kotlin.fir.symbols.impl.*
-import org.jetbrains.kotlin.fir.types.ConeTypeProjection
-import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
+import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.fir.types.builder.buildResolvedTypeRef
-import org.jetbrains.kotlin.fir.types.coneType
 import org.jetbrains.kotlin.fir.types.impl.ConeClassLikeTypeImpl
 import org.jetbrains.kotlin.fir.types.impl.ConeTypeParameterTypeImpl
-import org.jetbrains.kotlin.fir.types.toLookupTag
 import org.jetbrains.kotlin.javac.resolve.classId
 import org.jetbrains.kotlin.name.*
 import org.jetbrains.kotlin.types.Variance
@@ -279,6 +278,7 @@ class ClrSymbolProvider(
 				namespace = classId.packageFqName.asString(),
 				name = classId.shortClassName.asString(),
 				isReturnPosition = true,
+				nullable = false,
 				typeParameters = emptyList()
 			)
 			if (!node.isStatic) {
@@ -326,6 +326,9 @@ class ClrSymbolProvider(
 					namespace = node.returnType.namespace ?: "",
 					name = node.returnType.name,
 					isReturnPosition = true,
+					nullable = !node.attributes.mapNotNull { it.type }.any {
+						it.match("kotlin.clr", "KotlinNotNull")
+					},
 					typeParameters = node.typeParameters.map {
 						typeParameterSymbols.find { symbol ->
 							symbol.name.asString() == it.name
@@ -337,7 +340,7 @@ class ClrSymbolProvider(
 					coneType = ConeClassLikeTypeImpl(
 						classId("kotlin", "Any").toLookupTag(),
 						emptyArray(),
-						false
+						true
 					)
 				}
 			}
@@ -417,6 +420,9 @@ class ClrSymbolProvider(
 					namespace = node.returnType.namespace ?: "",
 					name = node.returnType.name,
 					isReturnPosition = true,
+					nullable = !node.attributes.mapNotNull { it.type }.any {
+						it.match("kotlin.clr", "KotlinNotNull")
+					},
 					typeParameters = node.typeParameters.map {
 						typeParameterSymbols.find { typeParameter ->
 							typeParameter.name.asString() == it.name
@@ -428,7 +434,7 @@ class ClrSymbolProvider(
 					coneType = ConeClassLikeTypeImpl(
 						classId("kotlin", "Any").toLookupTag(),
 						emptyArray(),
-						false
+						true
 					)
 				}
 			}
@@ -471,6 +477,9 @@ class ClrSymbolProvider(
 					namespace = node.type.namespace ?: "",
 					name = node.type.name,
 					isReturnPosition = true,
+					nullable = !node.attributes.mapNotNull { it.type }.any {
+						it.match("kotlin.clr", "KotlinNotNull")
+					},
 					typeParameters = emptyList()
 				)
 
@@ -483,7 +492,9 @@ class ClrSymbolProvider(
 								false
 							)
 						}.toTypedArray(),
-						false
+						!node.attributes.mapNotNull { it.type }.any {
+							it.match("kotlin.clr", "KotlinNotNull")
+						}
 					)
 				}
 
@@ -491,7 +502,7 @@ class ClrSymbolProvider(
 					coneType = ConeClassLikeTypeImpl(
 						classId("kotlin", "Any").toLookupTag(),
 						emptyArray(),
-						false
+						true
 					)
 				}
 			}
@@ -531,10 +542,12 @@ class ClrSymbolProvider(
 		return classSymbols[classId]
 	}
 
+	@OptIn(UnresolvedExpressionTypeAccess::class)
 	private fun resolveFirTypeRefForClr(
 		namespace: String,
 		name: String,
 		isReturnPosition: Boolean,
+		nullable: Boolean,
 		typeParameters: List<FirTypeParameterSymbol>,
 	): FirResolvedTypeRef {
 		try {
@@ -574,13 +587,14 @@ class ClrSymbolProvider(
 			return buildResolvedTypeRef {
 				coneType = ConeClassLikeTypeImpl(
 					classId.toLookupTag(),
-					typeParameters.map {
+					typeParameters.map { typeParameterSymbol ->
+						typeParameterSymbol.annotations
 						ConeTypeParameterTypeImpl(
-							it.toLookupTag(),
-							false
+							typeParameterSymbol.toLookupTag(),
+							typeParameterSymbol.defaultType.isMarkedNullable
 						)
 					}.toTypedArray(),
-					false
+					nullable
 				)
 			}
 		} catch (e: Throwable) {

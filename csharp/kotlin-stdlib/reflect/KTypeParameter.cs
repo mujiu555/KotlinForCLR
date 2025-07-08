@@ -14,11 +14,17 @@
    limitations under the License.
  */
 
+using kotlin.clr;
+
 namespace kotlin.reflect;
 
 public interface KTypeParameter : KClassifier {
+	[KotlinNotNull]
 	public string name { get; }
+	[KotlinNotNull]
 	public List<KType> upperBounds { get; }
+	[KotlinNotNull]
 	public KVariance variance { get; }
+	[KotlinNotNull]
 	public bool isReified { get; }
 }

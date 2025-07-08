@@ -14,46 +14,66 @@
    limitations under the License.
  */
 
+using kotlin.clr;
+
 namespace kotlin.ranges;
 
 public class CharProgression {
 	internal CharProgression(
+		[KotlinNotNull]
 		char first,
+		[KotlinNotNull]
 		char endInclusive,
+		[KotlinNotNull]
 		int step
 	) {
 		this.first = first;
 		this.step = step;
 	}
 	
+	[KotlinNotNull]
 	public char first { get; }
+	
+	[KotlinNotNull]
 	public int step { get; }
 }
 
 public class IntProgression {
 	internal IntProgression(
+		[KotlinNotNull]
 		int first,
+		[KotlinNotNull]
 		int endInclusive,
+		[KotlinNotNull]
 		int step
 	) {
 		this.first = first;
 		this.step = step;
 	}
 	
+	[KotlinNotNull]
 	public int first { get; }
+	
+	[KotlinNotNull]
 	public int step { get; }
 }
 
 public class LongProgression {
 	internal LongProgression(
+		[KotlinNotNull]
 		long first,
+		[KotlinNotNull]
 		long endInclusive,
+		[KotlinNotNull]
 		long step
 	) {
 		this.first = first;
 		this.step = step;
 	}
 	
+	[KotlinNotNull]
 	public long first { get; }
+	
+	[KotlinNotNull]
 	public long step { get; }
 }

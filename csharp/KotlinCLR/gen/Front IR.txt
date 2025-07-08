@@ -1,15 +1,6 @@
 FILE: Main.kt
-    public final val PI: R|kotlin/Double| = Double(3.14)
-        public get(): R|kotlin/Double|
-    public final var x: R|kotlin/Int| = Int(0)
-        public get(): R|kotlin/Int|
-        public set(value: R|kotlin/Int|): R|kotlin/Unit|
-    public final fun incrementX(): R|kotlin/Unit| {
-        R|/x| = R|/x|.R|kotlin/Int.plus|(Int(1))
-    }
     public final fun main(): R|kotlin/Unit| {
-        R|kotlin/io/println|(<strcat>(String(x = ), R|/x|, String(, PI = ), R|/PI|))
-        R|/incrementX|()
-        R|kotlin/io/println|(<strcat>(String(x = ), R|/x|, String(, PI = ), R|/PI|))
+        lval a: R|kotlin/String?| = Null(null)
+        R|kotlin/io/println|(R|<local>/a|)
     }
 

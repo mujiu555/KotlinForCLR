@@ -14,8 +14,11 @@
    limitations under the License.
  */
 
+using kotlin.clr;
+
 namespace kotlin.reflect;
 
 public interface KCallable {
+	[KotlinNotNull]
 	public string name { get; }
 }

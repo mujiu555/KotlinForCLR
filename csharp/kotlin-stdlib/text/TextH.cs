@@ -21,7 +21,17 @@ namespace kotlin.text;
 [KotlinFileClass]
 public class TextH {
 	[KotlinExtension]
-	public static string replace(string receiver, string oldValue, string newValue, bool ignoreCase = false) {
+	[KotlinNotNull]
+	public static string replace(
+		[KotlinNotNull]
+		string receiver,
+		[KotlinNotNull]
+		string oldValue,
+		[KotlinNotNull]
+		string newValue,
+		[KotlinNotNull]
+		bool ignoreCase = false
+	) {
 		return receiver.Replace(oldValue, newValue, ignoreCase, null);
 	}
 }

@@ -52,9 +52,7 @@ class CSharpCodegenFactory {
 		val context = ClrBackendContext(
 			state,
 			irBuiltIns,
-			symbolTable,
-			extensions,
-			irProviders
+			symbolTable
 		)
 
 

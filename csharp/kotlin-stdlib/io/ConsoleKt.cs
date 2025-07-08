@@ -23,6 +23,8 @@ public sealed class ConsoleKt {
 	public static void println() => Console.WriteLine();
 	public static void println(object? message) => Console.WriteLine(message);
 	public static void print(object? message) => Console.Write(message);
+	
+	[KotlinNotNull]
 	public static string readln() => readlnOrNull();
 	public static string? readlnOrNull() => readLine();
 	public static string? readLine() => Console.ReadLine();

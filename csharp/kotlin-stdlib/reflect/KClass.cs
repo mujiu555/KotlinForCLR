@@ -14,10 +14,14 @@
    limitations under the License.
  */
 
+using kotlin.clr;
+
 namespace kotlin.reflect;
 
 public interface KClass : KClassifier {
 	public string? simpleName { get; }
 	public string? qualifiedName { get; }
+	
+	[KotlinNotNull]
 	public bool isInstance(object? value);
 }

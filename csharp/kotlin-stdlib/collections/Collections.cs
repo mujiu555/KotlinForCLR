@@ -20,5 +20,6 @@ namespace kotlin.collections;
 
 [KotlinFileClass]
 public static class CollectionsKt {
+	[KotlinNotNull]
 	public static IReadOnlyList<T> listOf<T>(params T[] elements) => [..elements];
 }

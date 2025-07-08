@@ -17,7 +17,6 @@
 package compiler.clr.backend
 
 import compiler.clr.backend.mapping.IrTypeMapper
-import compiler.clr.backend.mapping.MethodSignatureMapper
 import org.jetbrains.kotlin.backend.common.CommonBackendContext
 import org.jetbrains.kotlin.backend.common.Mapping
 import org.jetbrains.kotlin.backend.common.ir.Ir
@@ -34,7 +33,6 @@ import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.IrSetValue
 import org.jetbrains.kotlin.ir.expressions.IrStatementOrigin
-import org.jetbrains.kotlin.ir.linkage.IrProvider
 import org.jetbrains.kotlin.ir.symbols.IrValueSymbol
 import org.jetbrains.kotlin.ir.types.IrTypeSystemContext
 import org.jetbrains.kotlin.ir.util.SymbolTable
@@ -46,9 +44,7 @@ import org.jetbrains.kotlin.resolve.jvm.JvmClassName
 class ClrBackendContext(
     val state: GenerationState,
     override val irBuiltIns: IrBuiltIns,
-    val symbolTable: SymbolTable,
-    val generatorExtensions: ClrGeneratorExtensions,
-    val irProviders: List<IrProvider>
+    val symbolTable: SymbolTable
 ) : CommonBackendContext {
     // 基础组件
     override val irFactory: IrFactory = IrFactoryImpl
@@ -56,13 +52,12 @@ class ClrBackendContext(
     
     // 映射器
     val defaultTypeMapper = IrTypeMapper(this)
-    val defaultMethodSignatureMapper = MethodSignatureMapper(this, defaultTypeMapper)
-    
+
     // 支持组件
     override val innerClassesSupport: InnerClassesSupport = JvmInnerClassesSupport(irFactory)
     override val mapping: Mapping = Mapping()
     override val ir = ClrIr()
-    
+
     // 共享变量管理
     override val sharedVariablesManager = object : SharedVariablesManager {
         override fun declareSharedVariable(originalDeclaration: IrVariable): IrVariable {
@@ -108,7 +103,7 @@ class ClrBackendContext(
         override val symbols = ClrSymbols(this@ClrBackendContext)
         override fun shouldGenerateHandlerParameterForDefaultBodyFun() = true
     }
-    
+
     // 用于多文件外观类（MultifileFacade）处理
     val multifileFacadesToAdd = mutableMapOf<JvmClassName, MutableList<IrClass>>()
 }
