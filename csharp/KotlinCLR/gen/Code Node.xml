@@ -45,7 +45,7 @@
                     <PlainNode.Plain>set</PlainNode.Plain>
                     <PaddingNode.Block>
                         <CodeNode.SingleLine>
-                            <PlainNode.Plain>x_backingField = &lt;set-?&gt;;</PlainNode.Plain>
+                            <PlainNode.Plain>x_backingField = value;</PlainNode.Plain>
                         </CodeNode.SingleLine>
                     </PaddingNode.Block>
                 </CodeNode.MultiLine>

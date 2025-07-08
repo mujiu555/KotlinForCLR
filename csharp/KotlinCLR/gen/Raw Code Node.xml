@@ -90,7 +90,7 @@
                                     <PlainNode.Plain>_backingField</PlainNode.Plain>
                                 </CodeNode.SingleLineList>
                                 <PlainNode.Plain> = </PlainNode.Plain>
-                                <PlainNode.Plain>&lt;set-?&gt;</PlainNode.Plain>
+                                <PlainNode.Plain>value</PlainNode.Plain>
                             </CodeNode.SingleLineList>
                             <PlainNode.Plain>;</PlainNode.Plain>
                         </CodeNode.SingleLine>

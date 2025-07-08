@@ -21,7 +21,7 @@ public static class MainKt
         }
         set
         {
-            x_backingField = <set-?>;
+            x_backingField = value;
         }
     }
 

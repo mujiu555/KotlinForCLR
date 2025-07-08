@@ -1,9 +1,9 @@
 FILE: Main.kt
     public? final? val PI: <implicit> = Double(3.14)
         public? get(): <implicit>
-    public? final? var x: Int = IntegerLiteral(0)
-        public? get(): Int
-        public? set(value: Int): R|kotlin/Unit|
+    public? final? var x: <implicit> = IntegerLiteral(0)
+        public? get(): <implicit>
+        public? set(value: <implicit>): R|kotlin/Unit|
     public? final? fun incrementX(): R|kotlin/Unit| {
         +=(x#, IntegerLiteral(1))
     }

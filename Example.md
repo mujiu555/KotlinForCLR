@@ -132,7 +132,7 @@ public static class MainKt
 }
 ```
 
-# [Variables](https://kotlinlang.org/docs/basic-syntax.html#variables) **Errpr**
+# [Variables](https://kotlinlang.org/docs/basic-syntax.html#variables)
 
 ```kotlin
 val PI = 3.14
@@ -173,7 +173,7 @@ public static class MainKt
         }
         set
         {
-            x_backingField = <set-?>;
+            x_backingField = value;
         }
     }
 
