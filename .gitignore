@@ -13,3 +13,4 @@ build/
 /csharp/KotlinCLR/bin/
 /csharp/KotlinCLR/obj/
 /csharp/KotlinCLR.sln.DotSettings.user
+/out-jvm/

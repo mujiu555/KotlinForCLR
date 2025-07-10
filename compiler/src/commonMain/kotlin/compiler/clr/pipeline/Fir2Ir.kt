@@ -52,18 +52,16 @@ object Fir2Ir : PipelinePhase<ClrFrontendPipelineArtifact, ClrFir2IrPipelineArti
 ) {
 	override fun executePhase(input: ClrFrontendPipelineArtifact): ClrFir2IrPipelineArtifact? {
 		val (firResult, configuration, environment, diagnosticCollector, sourceFiles) = input
+		val fir2IrExtensions = JvmFir2IrExtensions(configuration, JvmIrDeserializerImpl())
 		val irGenerationExtensions = IrGenerationExtension.Companion.getInstances(environment.project)
 
-		val jvmFir2IrExtensions = JvmFir2IrExtensions(configuration, JvmIrDeserializerImpl())
-
 		val fir2IrAndIrActualizerResult = firResult.convertToIrAndActualizeForClr(
-			jvmFir2IrExtensions,
+			fir2IrExtensions,
 			configuration,
 			diagnosticCollector,
 			irGenerationExtensions
 		)
 
-		// 输出IR调试信息
 		File(input.configuration.get(CLRConfigurationKeys.OUTPUT_DIRECTORY)!!, "Kotlin IR.txt").printWriter()
 			.use { writer ->
 				writer.println(fir2IrAndIrActualizerResult.irModuleFragment.dump())
