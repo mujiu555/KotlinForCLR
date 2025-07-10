@@ -1,4 +1,4 @@
-﻿/*
+/*
    Copyright 2025 Nyayurin
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,8 +14,8 @@
    limitations under the License.
  */
 
-using System;
+package compiler.clr
 
-namespace kotlin.clr;
+import org.jetbrains.kotlin.cli.common.arguments.CommonCompilerArgumentsConfigurator
 
-public class KotlinObject : Attribute;
+class CLRCompilerArgumentsConfigurator : CommonCompilerArgumentsConfigurator()

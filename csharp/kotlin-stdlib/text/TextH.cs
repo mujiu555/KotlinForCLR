@@ -32,6 +32,6 @@ public class TextH {
 		[KotlinNotNull]
 		bool ignoreCase = false
 	) {
-		return receiver.Replace(oldValue, newValue, ignoreCase, null);
+		return receiver.Replace(oldValue, newValue);
 	}
 }

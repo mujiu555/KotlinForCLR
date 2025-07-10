@@ -23,7 +23,8 @@ import org.jetbrains.kotlin.backend.jvm.JvmIrDeserializerImpl
 import org.jetbrains.kotlin.backend.jvm.JvmIrSpecialAnnotationSymbolProvider
 import org.jetbrains.kotlin.backend.jvm.JvmIrTypeSystemContext
 import org.jetbrains.kotlin.builtins.DefaultBuiltIns
-import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
+import org.jetbrains.kotlin.cli.pipeline.CheckCompilationErrors
+import org.jetbrains.kotlin.cli.pipeline.PerformanceNotifications
 import org.jetbrains.kotlin.cli.pipeline.PipelinePhase
 import org.jetbrains.kotlin.config.AnalysisFlags
 import org.jetbrains.kotlin.config.CompilerConfiguration
@@ -42,7 +43,12 @@ import org.jetbrains.kotlin.ir.util.dump
 import java.io.File
 
 object Fir2Ir : PipelinePhase<ClrFrontendPipelineArtifact, ClrFir2IrPipelineArtifact>(
-	name = "ClrFir2IrPipelinePhase"
+	name = "ClrFir2IrPipelinePhase",
+	preActions = setOf(PerformanceNotifications.TranslationToIrStarted),
+	postActions = setOf(
+		PerformanceNotifications.TranslationToIrFinished,
+		CheckCompilationErrors.CheckDiagnosticCollector
+	)
 ) {
 	override fun executePhase(input: ClrFrontendPipelineArtifact): ClrFir2IrPipelineArtifact? {
 		val (firResult, configuration, environment, diagnosticCollector, sourceFiles) = input
@@ -58,9 +64,10 @@ object Fir2Ir : PipelinePhase<ClrFrontendPipelineArtifact, ClrFir2IrPipelineArti
 		)
 
 		// 输出IR调试信息
-		File(input.configuration.get(CLRConfigurationKeys.OUTPUT_DIRECTORY)!!, "Kotlin IR.txt").printWriter().use { writer ->
-			writer.println(fir2IrAndIrActualizerResult.irModuleFragment.dump())
-		}
+		File(input.configuration.get(CLRConfigurationKeys.OUTPUT_DIRECTORY)!!, "Kotlin IR.txt").printWriter()
+			.use { writer ->
+				writer.println(fir2IrAndIrActualizerResult.irModuleFragment.dump())
+			}
 
 		return ClrFir2IrPipelineArtifact(
 			fir2IrAndIrActualizerResult,
@@ -77,9 +84,6 @@ object Fir2Ir : PipelinePhase<ClrFrontendPipelineArtifact, ClrFir2IrPipelineArti
 		diagnosticsReporter: BaseDiagnosticsCollector,
 		irGeneratorExtensions: Collection<IrGenerationExtension>,
 	): Fir2IrActualizedResult {
-		val performanceManager = configuration[CLIConfigurationKeys.PERF_MANAGER]
-		performanceManager?.notifyIRTranslationStarted()
-
 		val fir2IrConfiguration = Fir2IrConfiguration.forJvmCompilation(configuration, diagnosticsReporter)
 
 		val result = convertToIrAndActualize(
@@ -105,7 +109,6 @@ object Fir2Ir : PipelinePhase<ClrFrontendPipelineArtifact, ClrFir2IrPipelineArti
 			}
 		)
 
-		performanceManager?.notifyIRTranslationFinished()
 		return result
 	}
 }

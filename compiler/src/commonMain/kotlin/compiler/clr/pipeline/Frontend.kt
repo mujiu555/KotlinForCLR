@@ -36,7 +36,9 @@ import org.jetbrains.kotlin.cli.jvm.index.JavaRoot
 import org.jetbrains.kotlin.cli.jvm.index.JvmDependenciesDynamicCompoundIndex
 import org.jetbrains.kotlin.cli.jvm.index.JvmDependenciesIndexImpl
 import org.jetbrains.kotlin.cli.jvm.index.SingleJavaFileRootsIndex
+import org.jetbrains.kotlin.cli.pipeline.CheckCompilationErrors
 import org.jetbrains.kotlin.cli.pipeline.ConfigurationPipelineArtifact
+import org.jetbrains.kotlin.cli.pipeline.PerformanceNotifications
 import org.jetbrains.kotlin.cli.pipeline.PipelinePhase
 import org.jetbrains.kotlin.com.intellij.core.CoreJavaFileManager
 import org.jetbrains.kotlin.com.intellij.openapi.Disposable
@@ -47,9 +49,9 @@ import org.jetbrains.kotlin.com.intellij.openapi.vfs.VirtualFileSystem
 import org.jetbrains.kotlin.com.intellij.psi.PsiManager
 import org.jetbrains.kotlin.com.intellij.psi.search.GlobalSearchScope
 import org.jetbrains.kotlin.config.*
-import org.jetbrains.kotlin.fir.BinaryModuleData
 import org.jetbrains.kotlin.fir.DependencyListForCliModule
 import org.jetbrains.kotlin.fir.declarations.builder.buildImport
+import org.jetbrains.kotlin.fir.extensions.FirExtensionRegistrar
 import org.jetbrains.kotlin.fir.pipeline.FirResult
 import org.jetbrains.kotlin.fir.pipeline.buildFirViaLightTree
 import org.jetbrains.kotlin.fir.pipeline.resolveAndCheckFir
@@ -63,7 +65,8 @@ import org.jetbrains.kotlin.name.Name
 import java.io.File
 
 object Frontend : PipelinePhase<ConfigurationPipelineArtifact, ClrFrontendPipelineArtifact>(
-	name = "ClrFrontendPipelinePhase"
+	name = "ClrFrontendPipelinePhase",
+	postActions = setOf(PerformanceNotifications.AnalysisFinished, CheckCompilationErrors.CheckDiagnosticCollector)
 ) {
 	override fun executePhase(input: ConfigurationPipelineArtifact): ClrFrontendPipelineArtifact? {
 		val (configuration, diagnosticsCollector, rootDisposable) = input
@@ -102,7 +105,7 @@ object Frontend : PipelinePhase<ConfigurationPipelineArtifact, ClrFrontendPipeli
 		)
 
 		val outputs = sessionsWithSources.map { (session, sources) ->
-			val rawFirFiles = session.buildFirViaLightTree(sources, diagnosticsCollector)
+			val rawFirFiles = session.buildFirViaLightTree(sources, diagnosticsCollector, null)
 			rawFirFiles.forEach {
 				listOf(
 					"kotlin",
@@ -175,13 +178,8 @@ object Frontend : PipelinePhase<ConfigurationPipelineArtifact, ClrFrontendPipeli
 				.associateBy { it.name }
 		}
 
-		// 创建依赖列表
-		val binaryModuleData = BinaryModuleData.initialize(
-			Name.identifier(moduleName),
-			ClrPlatforms.unspecifiedClrPlatform
-		)
-		val libraryList = DependencyListForCliModule.build(binaryModuleData) {
-			dependencies(dllPaths.map { it.toPath() })
+		val libraryList = DependencyListForCliModule.build(Name.identifier(moduleName)) {
+			dependencies(dllPaths.map { it.absolutePath })
 		}
 
 		return libraryList to assemblies
@@ -265,7 +263,8 @@ object Frontend : PipelinePhase<ConfigurationPipelineArtifact, ClrFrontendPipeli
 				rootsIndex,
 				it.packagePartProviders,
 				SingleJavaFileRootsIndex(singleCSharpFileRoots),
-				configuration.getBoolean(JVMConfigurationKeys.USE_PSI_CLASS_FILES_READING)
+				configuration.getBoolean(JVMConfigurationKeys.USE_PSI_CLASS_FILES_READING),
+				null
 			)
 		}
 	}
@@ -300,6 +299,7 @@ object Frontend : PipelinePhase<ConfigurationPipelineArtifact, ClrFrontendPipeli
 		isCommonSource: (F) -> Boolean,
 		fileBelongsToModule: (F, String) -> Boolean,
 	): List<SessionWithSources<F>> {
+		val extensionRegistrars = FirExtensionRegistrar.getInstances(projectEnvironment.project)
 		return SessionConstructionUtils.prepareSessions(
 			files = files,
 			configuration = configuration,
@@ -310,29 +310,37 @@ object Frontend : PipelinePhase<ConfigurationPipelineArtifact, ClrFrontendPipeli
 			isCommonSource = isCommonSource,
 			isScript = { false },
 			fileBelongsToModule = fileBelongsToModule,
-			createLibrarySession = { sessionProvider ->
-				FirClrSessionFactory.createLibrarySession(
+			createSharedLibrarySession = { sessionProvider ->
+				FirClrSessionFactory.createSharedLibrarySession(
 					rootModuleName,
 					sessionProvider,
+					projectEnvironment,
+					extensionRegistrars,
+					librariesScope,
+					configuration.languageVersionSettings,
+					assemblies,
+				)
+			},
+			createLibrarySession = { sessionProvider, sharedLibrarySession ->
+				FirClrSessionFactory.createLibrarySession(
+					sessionProvider,
+					sharedLibrarySession,
 					libraryList.moduleDataProvider,
 					projectEnvironment,
+					extensionRegistrars,
 					librariesScope,
-					assemblies,
 					configuration.languageVersionSettings,
+					assemblies,
 				)
 			},
 			createSourceSession = { moduleFiles, moduleData, sessionProvider, sessionConfigurator ->
-				FirClrSessionFactory.createModuleBasedSession(
+				FirClrSessionFactory.createSourceSession(
 					moduleData,
 					sessionProvider,
-					projectEnvironment.getSearchScopeForProjectJavaSources(),
 					projectEnvironment,
-					emptyList(),
-					configuration.languageVersionSettings,
+					extensionRegistrars,
+					configuration,
 					assemblies,
-					configuration.get(CommonConfigurationKeys.LOOKUP_TRACKER),
-					configuration.get(CommonConfigurationKeys.ENUM_WHEN_TRACKER),
-					configuration.get(CommonConfigurationKeys.IMPORT_TRACKER),
 					sessionConfigurator,
 				)
 			}

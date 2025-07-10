@@ -30,6 +30,7 @@ import org.jetbrains.kotlin.cli.common.moduleChunk
 import org.jetbrains.kotlin.cli.common.modules.ModuleChunk
 import org.jetbrains.kotlin.cli.pipeline.AbstractConfigurationPhase
 import org.jetbrains.kotlin.cli.pipeline.ArgumentsPipelineArtifact
+import org.jetbrains.kotlin.cli.pipeline.CheckCompilationErrors
 import org.jetbrains.kotlin.cli.pipeline.ConfigurationUpdater
 import org.jetbrains.kotlin.config.*
 import org.jetbrains.kotlin.metadata.deserialization.MetadataVersion
@@ -40,7 +41,8 @@ import java.io.File
 
 object Configuration : AbstractConfigurationPhase<CLRCompilerArguments>(
 	name = "ClrConfigurationPipelinePhase",
-	configurationUpdaters = listOf(ClrConfigurationUpdater)
+	postActions = setOf(CheckCompilationErrors.CheckMessageCollector),
+	configurationUpdaters = listOf(Updater)
 ) {
 	private val json = Json {
 		ignoreUnknownKeys = true
@@ -49,7 +51,7 @@ object Configuration : AbstractConfigurationPhase<CLRCompilerArguments>(
 	override fun createMetadataVersion(versionArray: IntArray) = MetadataVersion(*versionArray)
 	override fun provideCustomScriptingPluginOptions(arguments: CLRCompilerArguments) = emptyList<String>()
 
-	private object ClrConfigurationUpdater : ConfigurationUpdater<CLRCompilerArguments>() {
+	private object Updater : ConfigurationUpdater<CLRCompilerArguments>() {
 		override fun fillConfiguration(
 			input: ArgumentsPipelineArtifact<CLRCompilerArguments>,
 			configuration: CompilerConfiguration,

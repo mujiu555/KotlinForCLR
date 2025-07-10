@@ -28,7 +28,6 @@ import org.jetbrains.kotlin.fir.lazy.Fir2IrLazySimpleFunction
 import org.jetbrains.kotlin.fir.types.classId
 import org.jetbrains.kotlin.fir.types.coneType
 import org.jetbrains.kotlin.ir.IrStatement
-import org.jetbrains.kotlin.ir.backend.js.utils.valueArguments
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.ir.symbols.*
@@ -41,7 +40,7 @@ import org.jetbrains.kotlin.javac.resolve.classId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
-inline fun <T> List<T>.join(separator: T): List<T> = when {
+fun <T> List<T>.join(separator: T): List<T> = when {
 	isEmpty() -> this
 	else -> zipWithNext { node, _ -> listOf(node, separator) }.flatten() + last()
 }
@@ -326,7 +325,7 @@ class ClassCodegen(val context: ClrBackendContext) {
 					)
 				}
 			}
-			if (extensionReceiverParameter != null) {
+			if (parameters.firstOrNull { it.kind == IrParameterKind.ExtensionReceiver } != null) {
 				add(singleLineCode(plainPlain("[global::kotlin.clr.KotlinExtension]")))
 			}
 			add(
@@ -340,7 +339,9 @@ class ClassCodegen(val context: ClrBackendContext) {
 
 						val returnType = typeMapper.mapType(returnType, TypeStyle.ReturnType)
 
-						val parameters = valueParameters.map {
+						val parameters = parameters.filter {
+							it.kind == IrParameterKind.Regular || it.kind == IrParameterKind.Context
+						}.map {
 							typeMapper.mapType(it.type, TypeStyle.Normal) to it.name.visit()
 						}
 
@@ -350,7 +351,7 @@ class ClassCodegen(val context: ClrBackendContext) {
 						}
 						add(plainPlain("$returnType "))
 						add(plainPlain("${name.visit()}("))
-						extensionReceiverParameter?.let {
+						this@visit.parameters.firstOrNull { it.kind == IrParameterKind.ExtensionReceiver }?.let {
 							add(plainPlain("${typeMapper.mapType(it.type, TypeStyle.Normal)} receiver, "))
 						}
 						add(plainPlain(parameters.joinToString(", ") { "${it.first} ${it.second}" }))
@@ -367,7 +368,9 @@ class ClassCodegen(val context: ClrBackendContext) {
 			buildList {
 				val className = (parent as? IrClass)?.name?.visit()!!
 
-				val parameters = valueParameters.map {
+				val parameters = parameters.filter {
+					it.kind == IrParameterKind.Regular || it.kind == IrParameterKind.Context
+				}.map {
 					typeMapper.mapType(it.type, TypeStyle.Normal) to it.name.visit()
 				}
 
@@ -613,7 +616,7 @@ class ClassCodegen(val context: ClrBackendContext) {
 
 						else -> {
 							add(plainPlain(function.name.visit()))
-							if (typeArgumentsCount > 0) {
+							if (typeArguments.isNotEmpty()) {
 								add(plainPlain("<"))
 								add(
 									singleLineListCode(
@@ -628,7 +631,12 @@ class ClassCodegen(val context: ClrBackendContext) {
 								add(plainPlain(">"))
 							}
 							add(plainPlain("("))
-							listOfNotNull(extensionReceiver, *valueArguments.toTypedArray())
+							listOfNotNull(
+								arguments.getOrNull(symbol.owner.parameters.indexOfFirst {
+									it.kind == IrParameterKind.ExtensionReceiver
+								}),
+								*valueArguments.toTypedArray()
+							)
 								.map { it.visitUsing() }
 								.join(plainPlain(", "))
 								.forEach { add(it) }
@@ -678,7 +686,7 @@ class ClassCodegen(val context: ClrBackendContext) {
 
 						else -> {
 							add(plainPlain(function.name.visit()))
-							if (typeArgumentsCount > 0) {
+							if (typeArguments.isNotEmpty()) {
 								add(plainPlain("<"))
 								add(
 									singleLineListCode(
@@ -693,7 +701,12 @@ class ClassCodegen(val context: ClrBackendContext) {
 								add(plainPlain(">"))
 							}
 							add(plainPlain("("))
-							listOfNotNull(extensionReceiver, *valueArguments.toTypedArray())
+							listOfNotNull(
+								arguments.getOrNull(symbol.owner.parameters.indexOfFirst {
+									it.kind == IrParameterKind.ExtensionReceiver
+								}),
+								*valueArguments.toTypedArray()
+							)
 								.map { it.visitUsing() }
 								.join(plainPlain(", "))
 								.forEach { add(it) }
@@ -823,7 +836,7 @@ class ClassCodegen(val context: ClrBackendContext) {
 
 							else -> {
 								add(plainPlain(function.name.visit()))
-								if (typeArgumentsCount > 0) {
+								if (typeArguments.isNotEmpty()) {
 									add(plainPlain("<"))
 									add(
 										singleLineListCode(
@@ -838,7 +851,12 @@ class ClassCodegen(val context: ClrBackendContext) {
 									add(plainPlain(">"))
 								}
 								add(plainPlain("("))
-								listOfNotNull(extensionReceiver, *valueArguments.toTypedArray())
+								listOfNotNull(
+									arguments.getOrNull(symbol.owner.parameters.indexOfFirst {
+										it.kind == IrParameterKind.ExtensionReceiver
+									}),
+									*valueArguments.toTypedArray()
+								)
 									.map { it.visitUsing() }
 									.join(plainPlain(", "))
 									.forEach { add(it) }
@@ -1130,4 +1148,18 @@ class ClassCodegen(val context: ClrBackendContext) {
 
 		OPEN -> plainPlain("")
 	}
+
+	private val IrFunctionAccessExpression.valueArguments
+		get() = symbol.owner.parameters
+			.filterNot { it.kind == IrParameterKind.DispatchReceiver }
+			.mapIndexed { index, it -> index to it }
+			.filter { (_, it) -> it.kind == IrParameterKind.Regular || it.kind == IrParameterKind.Context }
+			.map { (index, _) ->
+				arguments.drop(
+					when (arguments.first()) {
+						null -> 1
+						else -> 0
+					}
+				)[index]
+			}
 }

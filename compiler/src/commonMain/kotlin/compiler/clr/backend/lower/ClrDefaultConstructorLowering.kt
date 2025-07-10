@@ -46,20 +46,18 @@ internal class ClrDefaultConstructorLowering(val context: ClrBackendContext) : C
 		)
 			return
 
+		// Skip if the default constructor is already defined by user.
+		if (irClass.constructors.any { it.parameters.isEmpty() })
+			return
+
 		val primaryConstructor = irClass.constructors.firstOrNull { it.isPrimary } ?: return
 		if (DescriptorVisibilities.isPrivate(primaryConstructor.visibility))
 			return
 
-		if ((primaryConstructor.originalConstructorOfThisMfvcConstructorReplacement
-				?: primaryConstructor).hasMangledParameters()
-		)
+		if ((primaryConstructor.originalConstructorOfThisMfvcConstructorReplacement ?: primaryConstructor).hasMangledParameters())
 			return
 
-		if (primaryConstructor.valueParameters.isEmpty() || !primaryConstructor.valueParameters.all { it.hasDefaultValue() })
-			return
-
-		// Skip if the default constructor is already defined by user.
-		if (irClass.constructors.any { it.valueParameters.isEmpty() })
+		if (primaryConstructor.parameters.any { !it.hasDefaultValue() })
 			return
 
 		irClass.addConstructor {

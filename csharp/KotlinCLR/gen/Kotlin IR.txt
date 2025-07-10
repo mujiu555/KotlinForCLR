@@ -1,10 +1,22 @@
 MODULE_FRAGMENT name:<main>
   FILE fqName:<root> fileName:C:/Users/Yurin/IdeaProjects/KotlinForCLR/kotlin/src/Main.kt
-    FUN name:main visibility:public modality:FINAL <> () returnType:kotlin.Unit
+    FUN name:main visibility:public modality:FINAL returnType:kotlin.Unit
       BLOCK_BODY
-        VAR name:a type:kotlin.String? [val]
-          CONST Null type=kotlin.Nothing? value=null
-        TYPE_OP type=kotlin.Unit origin=IMPLICIT_COERCION_TO_UNIT typeOperand=kotlin.Unit
-          CALL 'public final fun println (message: kotlin.Any?): kotlin.Unit? declared in kotlin.io.ConsoleKt' type=kotlin.Unit? origin=null
-            message: GET_VAR 'val a: kotlin.String? [val] declared in <root>.main' type=kotlin.String? origin=null
+        VAR name:a type:kotlin.Int [var]
+          CONST Int type=kotlin.Int value=1
+        VAR name:s1 type:kotlin.String [val]
+          STRING_CONCATENATION type=kotlin.String
+            CONST String type=kotlin.String value="a is "
+            GET_VAR 'var a: kotlin.Int [var] declared in <root>.main' type=kotlin.Int origin=null
+        SET_VAR 'var a: kotlin.Int [var] declared in <root>.main' type=kotlin.Unit origin=EQ
+          CONST Int type=kotlin.Int value=2
+        VAR name:s2 type:kotlin.String [val]
+          STRING_CONCATENATION type=kotlin.String
+            CALL 'public final fun replace (<this>: kotlin.String, oldValue: kotlin.String, newValue: kotlin.String, ignoreCase: kotlin.Boolean): kotlin.String declared in kotlin.text.TextH' type=kotlin.String origin=null
+              ARG <this>: GET_VAR 'val s1: kotlin.String [val] declared in <root>.main' type=kotlin.String origin=null
+              ARG oldValue: GET_VAR 'val s1: kotlin.String [val] declared in <root>.main' type=kotlin.String origin=null
+              ARG newValue: CONST String type=kotlin.String value="is"
+              ARG ignoreCase: CONST String type=kotlin.String value="was"
+            CONST String type=kotlin.String value=", but now is "
+            GET_VAR 'var a: kotlin.Int [var] declared in <root>.main' type=kotlin.Int origin=null
 

@@ -18,15 +18,15 @@ package compiler.clr.backend
 
 import compiler.clr.backend.codegen.ClassCodegen
 import compiler.clr.backend.codegen.CodeNode
-import org.jetbrains.kotlin.backend.common.ir.isBytecodeGenerationSuppressed
+import org.jetbrains.kotlin.backend.common.phaser.PhaseEngine
 import org.jetbrains.kotlin.config.phaseConfig
 import org.jetbrains.kotlin.config.phaser.PhaseConfig
-import org.jetbrains.kotlin.config.phaser.invokeToplevel
+import org.jetbrains.kotlin.config.phaser.PhaserState
 import org.jetbrains.kotlin.diagnostics.impl.BaseDiagnosticsCollector
 import org.jetbrains.kotlin.ir.IrBuiltIns
+import org.jetbrains.kotlin.ir.IrProvider
 import org.jetbrains.kotlin.ir.declarations.IrFile
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.linkage.IrProvider
 import org.jetbrains.kotlin.ir.symbols.UnsafeDuringIrConstructionAPI
 import org.jetbrains.kotlin.ir.util.ExternalDependenciesGenerator
 import org.jetbrains.kotlin.ir.util.SymbolTable
@@ -48,21 +48,21 @@ class CSharpCodegenFactory {
 	)
 
 	fun invokeLowerings(state: GenerationState, input: BackendInput): CodegenInput {
-		val (irModuleFragment, irBuiltIns, symbolTable, irProviders, extensions) = input
+		val (irModuleFragment, irBuiltIns, symbolTable, irProviders, _) = input
 		val context = ClrBackendContext(
 			state,
 			irBuiltIns,
 			symbolTable
 		)
 
-
 		ExternalDependenciesGenerator(symbolTable, irProviders).generateUnboundSymbolsAsDependencies()
 
-		val allBuiltins = //irModuleFragment.files.filter { it.isJvmBuiltin }
-			emptyList<IrFile>()
-		irModuleFragment.files.removeIf { it.isBytecodeGenerationSuppressed }
+		val allBuiltins = emptyList<IrFile>()
 
-		clrLoweringPhases.invokeToplevel(state.configuration.phaseConfig ?: PhaseConfig(), context, irModuleFragment)
+		val engine = PhaseEngine(state.configuration.phaseConfig ?: PhaseConfig(), PhaserState(), context)
+		for (phase in clrLoweringPhases) {
+			engine.runPhase(phase, irModuleFragment)
+		}
 
 		return CodegenInput(state, context, irModuleFragment, allBuiltins)
 	}

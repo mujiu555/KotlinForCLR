@@ -14,6 +14,8 @@
    limitations under the License.
  */
 
+using System;
+
 namespace kotlin.clr;
 
 public class KotlinExtension : Attribute;

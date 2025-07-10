@@ -291,7 +291,7 @@ public static class MainKt
         global::System.Int32 a = 1;
         global::System.String s1 = $"{("a is ")}{(a)}";
         a = 2;
-        global::System.String s2 = $"{(global::kotlin.text.TextH.replace(s1, "is", "was"))}{(", but now is ")}{(a)}";
+        global::System.String s2 = $"{(global::kotlin.text.TextH.replace(s1, s1, "is", "was"))}{(", but now is ")}{(a)}";
     }
 
     public static void Main([global::kotlin.clr.KotlinNotNull] global::System.String[] args)
@@ -367,14 +367,14 @@ public static class MainKt
 {
     public static void main()
     {
-        global::System.Collections.Generic.IReadOnlyList<global::System.String?> items = global::kotlin.collections.CollectionsKt.listOf<[global::kotlin.clr.KotlinNotNull] global::System.String>("apple", "banana", "kiwifruit");
+        global::System.Collections.Generic.IReadOnlyList<global::System.String> items = global::kotlin.collections.CollectionsKt.listOf<global::System.String>();
         {
-            global::kotlin.collections.KotlinIterator<global::System.String?> iterator = new global::kotlin.collections.KotlinIterator<global::System.String?>(items.GetEnumerator());
+            global::kotlin.collections.KotlinIterator<global::System.String> iterator = new global::kotlin.collections.KotlinIterator<global::System.String>(items.GetEnumerator());
             while (iterator.hasNext())
             {
-                global::System.String? item = iterator.next();
+                global::System.String item = iterator.next();
                 {
-                    global::kotlin.io.ConsoleKt.println(item);
+                    global::kotlin.io.ConsoleKt.println();
                 };
             };
         };
@@ -405,7 +405,7 @@ public static class MainKt
 {
     public static void func([global::kotlin.clr.KotlinNotNull] global::System.Collections.Generic.IReadOnlyList<global::System.String> list)
     {
-        global::kotlin.io.ConsoleKt.println("123");
+        global::kotlin.io.ConsoleKt.println();
     }
 
     public static void main()
