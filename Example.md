@@ -268,7 +268,7 @@ public sealed class Rectangle : global::Shape
 }
 ```
 
-# [String templates](https://kotlinlang.org/docs/basic-syntax.html#string-templates)
+# [String templates](https://kotlinlang.org/docs/basic-syntax.html#string-templates) ***Error***
 
 ```kotlin
 fun main() {
@@ -367,14 +367,14 @@ public static class MainKt
 {
     public static void main()
     {
-        global::System.Collections.Generic.IReadOnlyList<global::System.String> items = global::kotlin.collections.CollectionsKt.listOf<global::System.String>();
+        global::System.Collections.Generic.IReadOnlyList<global::System.String> items = global::kotlin.collections.CollectionsKt.listOf<global::System.String>("apple", "banana", "kiwifruit");
         {
             global::kotlin.collections.KotlinIterator<global::System.String> iterator = new global::kotlin.collections.KotlinIterator<global::System.String>(items.GetEnumerator());
             while (iterator.hasNext())
             {
                 global::System.String item = iterator.next();
                 {
-                    global::kotlin.io.ConsoleKt.println();
+                    global::kotlin.io.ConsoleKt.println(item);
                 };
             };
         };
@@ -405,7 +405,7 @@ public static class MainKt
 {
     public static void func([global::kotlin.clr.KotlinNotNull] global::System.Collections.Generic.IReadOnlyList<global::System.String> list)
     {
-        global::kotlin.io.ConsoleKt.println();
+        global::kotlin.io.ConsoleKt.println("123");
     }
 
     public static void main()
@@ -488,6 +488,8 @@ public static class MainKt
 }
 ```
 
+***Error***
+
 ```kotlin
 class A {
     var a: String = ""
@@ -535,7 +537,7 @@ public static class MainKt
     public static void main()
     {
         global::A a = new global::A();
-        a.a = "123";
+        a.a = a;
     }
 
     public static void Main([global::kotlin.clr.KotlinNotNull] global::System.String[] args)

@@ -17,7 +17,6 @@
 package compiler.clr.pipeline
 
 import compiler.clr.CLRConfigurationKeys
-import compiler.clr.applyModuleProperties
 import compiler.clr.backend.CSharpCodegenFactory
 import compiler.clr.backend.KotlinToCSharpCompiler
 import compiler.clr.backend.KotlinToCSharpCompiler.toBackendInput
@@ -100,8 +99,6 @@ object Backend : PipelinePhase<ClrFir2IrPipelineArtifact, ClrBinaryPipelineArtif
 		module: Module,
 		buildFile: File?,
 	): CompilerConfiguration {
-		return copy().apply {
-			applyModuleProperties(module, buildFile)
-		}
+		return copy()
 	}
 }

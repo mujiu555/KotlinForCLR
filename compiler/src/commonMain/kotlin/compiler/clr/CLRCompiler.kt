@@ -20,6 +20,7 @@ import compiler.Compiler
 import compiler.clr.frontend.ClrPlatforms
 import compiler.clr.pipeline.Pipeline
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
+import org.jetbrains.kotlin.cli.common.modules.ModuleChunk
 import org.jetbrains.kotlin.config.Services
 import org.jetbrains.kotlin.platform.TargetPlatform
 
@@ -32,4 +33,10 @@ class CLRCompiler : Compiler<CLRCompilerArguments>() {
 		services: Services,
 		collector: MessageCollector,
 	) = Pipeline(defaultPerformanceManager).execute(arguments, services, collector)
+}
+
+internal fun ModuleChunk.targetDescription(): String {
+	return modules
+		.map { input -> input.getModuleName() + "-" + input.getModuleType() }
+		.let { names -> names.singleOrNull() ?: names.joinToString() }
 }
