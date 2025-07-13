@@ -1,8 +1,6 @@
 FILE: Main.kt
     public final fun main(): R|kotlin/Unit| {
-        lvar a: R|kotlin/Int| = Int(1)
-        lval s1: R|kotlin/String| = <strcat>(String(a is ), R|<local>/a|)
-        R|<local>/a| = Int(2)
-        lval s2: R|kotlin/String| = <strcat>(R|<local>/s1|.R|kotlin/text/replace|(String(is), String(was)), String(, but now is ), R|<local>/a|)
+        lval a: R|kotlin/String?| = Null(null)
+        R|kotlin/io/println|(R|<local>/a|)
     }
 

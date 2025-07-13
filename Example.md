@@ -268,7 +268,7 @@ public sealed class Rectangle : global::Shape
 }
 ```
 
-# [String templates](https://kotlinlang.org/docs/basic-syntax.html#string-templates) ***Error***
+# [String templates](https://kotlinlang.org/docs/basic-syntax.html#string-templates)
 
 ```kotlin
 fun main() {
@@ -291,7 +291,7 @@ public static class MainKt
         global::System.Int32 a = 1;
         global::System.String s1 = $"{("a is ")}{(a)}";
         a = 2;
-        global::System.String s2 = $"{(global::kotlin.text.TextH.replace(s1, s1, "is", "was"))}{(", but now is ")}{(a)}";
+        global::System.String s2 = $"{(global::kotlin.text.TextH.replace(s1, "is", "was"))}{(", but now is ")}{(a)}";
     }
 
     public static void Main([global::kotlin.clr.KotlinNotNull] global::System.String[] args)
@@ -488,8 +488,6 @@ public static class MainKt
 }
 ```
 
-***Error***
-
 ```kotlin
 class A {
     var a: String = ""
@@ -537,7 +535,7 @@ public static class MainKt
     public static void main()
     {
         global::A a = new global::A();
-        a.a = a;
+        a.a = "123";
     }
 
     public static void Main([global::kotlin.clr.KotlinNotNull] global::System.String[] args)

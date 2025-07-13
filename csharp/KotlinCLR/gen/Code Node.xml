@@ -12,27 +12,10 @@
             </CodeNode.SingleLine>
             <PaddingNode.Block>
                 <CodeNode.SingleLine>
-                    <PlainNode.Plain>global::System.Int32 a = 1;</PlainNode.Plain>
+                    <PlainNode.Plain>global::System.String? a = null;</PlainNode.Plain>
                 </CodeNode.SingleLine>
                 <CodeNode.SingleLine>
-                    <PlainNode.Plain>global::System.String s1 = </PlainNode.Plain>
-                    <CodeNode.StringConcatenation>
-                        <PlainNode.Plain>"a is "</PlainNode.Plain>
-                        <PlainNode.Plain>a</PlainNode.Plain>
-                    </CodeNode.StringConcatenation>
-                    <PlainNode.Plain>;</PlainNode.Plain>
-                </CodeNode.SingleLine>
-                <CodeNode.SingleLine>
-                    <PlainNode.Plain>a = 2;</PlainNode.Plain>
-                </CodeNode.SingleLine>
-                <CodeNode.SingleLine>
-                    <PlainNode.Plain>global::System.String s2 = </PlainNode.Plain>
-                    <CodeNode.StringConcatenation>
-                        <PlainNode.Plain>global::kotlin.text.TextH.replace(s1, s1, "is", "was")</PlainNode.Plain>
-                        <PlainNode.Plain>", but now is "</PlainNode.Plain>
-                        <PlainNode.Plain>a</PlainNode.Plain>
-                    </CodeNode.StringConcatenation>
-                    <PlainNode.Plain>;</PlainNode.Plain>
+                    <PlainNode.Plain>global::kotlin.io.ConsoleKt.println(a);</PlainNode.Plain>
                 </CodeNode.SingleLine>
             </PaddingNode.Block>
         </CodeNode.MultiLine>

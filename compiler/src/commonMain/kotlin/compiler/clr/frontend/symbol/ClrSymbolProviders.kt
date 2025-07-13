@@ -348,12 +348,6 @@ class ClrSymbolProvider(
 				}
 			}
 
-			dispatchReceiverType = ConeClassLikeTypeImpl(
-				lookupTag = classId.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-
 			val isExtension = node.attributes
 				.mapNotNull { it.type }
 				.any { it.match("kotlin.clr", "KotlinExtension") }
@@ -378,6 +372,7 @@ class ClrSymbolProvider(
 					}
 				}.fir
 			}
+			containerSource = ClrPackagePartSource(classId)
 			name = Name.identifier(node.name)
 			symbol = functionSymbol
 

@@ -19,6 +19,7 @@ package compiler.clr.backend.codegen
 import compiler.clr.backend.ClrBackendContext
 import compiler.clr.backend.mapping.IrTypeMapper
 import compiler.clr.backend.mapping.TypeStyle
+import org.jetbrains.kotlin.DeprecatedForRemovalCompilerApi
 import org.jetbrains.kotlin.descriptors.ClassKind.*
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Modality.*
@@ -1149,17 +1150,7 @@ class ClassCodegen(val context: ClrBackendContext) {
 		OPEN -> plainPlain("")
 	}
 
+	@OptIn(DeprecatedForRemovalCompilerApi::class)
 	private val IrFunctionAccessExpression.valueArguments
-		get() = symbol.owner.parameters
-			.filterNot { it.kind == IrParameterKind.DispatchReceiver }
-			.mapIndexed { index, it -> index to it }
-			.filter { (_, it) -> it.kind == IrParameterKind.Regular || it.kind == IrParameterKind.Context }
-			.map { (index, _) ->
-				arguments.drop(
-					when (arguments.first()) {
-						null -> 1
-						else -> 0
-					}
-				)[index]
-			}
+		get() = List(valueArgumentsCount) { getValueArgument(it) }
 }
