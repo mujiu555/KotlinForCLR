@@ -4,5 +4,6 @@ FILE: Main.kt
         lval s1: R|kotlin/String| = <strcat>(String(a is ), R|<local>/a|)
         R|<local>/a| = Int(2)
         lval s2: R|kotlin/String| = <strcat>(R|<local>/s1|.R|kotlin/text/replace|(String(is), String(was)), String(, but now is ), R|<local>/a|)
+        R|kotlin/io/println|(R|<local>/s1|.R|kotlin/String.plus|(R|<local>/s2|))
     }
 

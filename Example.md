@@ -568,3 +568,63 @@ public static class MainKt
     }
 }
 ```
+
+```kotlin
+fun main() {
+    val a = 1
+    println(a == 10)
+    println(a == 10)
+    println(a.equals(10))
+}
+```
+
+```c#
+[global::kotlin.clr.KotlinFileClass]
+public static class MainKt
+{
+    public static void main()
+    {
+        global::System.Int32 a = 1;
+        global::kotlin.io.ConsoleKt.println(a == 10);
+        global::kotlin.io.ConsoleKt.println(!(a == 10));
+        global::kotlin.io.ConsoleKt.println(a.Equals(10));
+    }
+
+    public static void Main([global::kotlin.clr.KotlinNotNull] global::System.String[] args)
+    {
+        global::MainKt.main();
+    }
+}
+```
+
+```kotlin
+fun main() {
+    var a = 1
+    val s1 = "a is $a"
+
+    a = 2
+    val s2 = "${s1.replace("is", "was")}, but now is $a"
+
+    println(s1 + s2)
+}
+```
+
+```c#
+[global::kotlin.clr.KotlinFileClass]
+public static class MainKt
+{
+    public static void main()
+    {
+        global::System.Int32 a = 1;
+        global::System.String s1 = $"{("a is ")}{(a)}";
+        a = 2;
+        global::System.String s2 = $"{(global::kotlin.text.TextH.replace(s1, "is", "was"))}{(", but now is ")}{(a)}";
+        global::kotlin.io.ConsoleKt.println((s1) + (s2));
+    }
+
+    public static void Main([global::kotlin.clr.KotlinNotNull] global::System.String[] args)
+    {
+        global::MainKt.main();
+    }
+}
+```

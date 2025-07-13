@@ -779,6 +779,12 @@ class ClassCodegen(val context: ClrBackendContext) {
 						plainPlain(")")
 					)
 
+					"not" -> singleLineListCode(
+						plainPlain("!("),
+						dispatchReceiver!!.visit(),
+						plainPlain(")")
+					)
+
 					else -> {
 						val name = function.name.visit()
 						when {
@@ -836,7 +842,12 @@ class ClassCodegen(val context: ClrBackendContext) {
 							}
 
 							else -> {
-								add(plainPlain(function.name.visit()))
+								add(plainPlain(function.name.visit().let {
+									when (it) {
+										"equals" -> "Equals"
+										else -> it
+									}
+								}))
 								if (typeArguments.isNotEmpty()) {
 									add(plainPlain("<"))
 									add(
@@ -884,6 +895,12 @@ class ClassCodegen(val context: ClrBackendContext) {
 					plainPlain("("),
 					valueArguments[1]!!.visitUsing(),
 					plainPlain(")"),
+				)
+
+				"EQEQ" -> singleLineListCode(
+					valueArguments[0]!!.visitUsing(),
+					plainPlain(" == "),
+					valueArguments[1]!!.visitUsing()
 				)
 
 				else -> multiLinePlain(

@@ -59,8 +59,6 @@
                             <PlainNode.Plain>(</PlainNode.Plain>
                             <PlainNode.Plain>s1</PlainNode.Plain>
                             <PlainNode.Plain>, </PlainNode.Plain>
-                            <PlainNode.Plain>s1</PlainNode.Plain>
-                            <PlainNode.Plain>, </PlainNode.Plain>
                             <PlainNode.Plain>"is"</PlainNode.Plain>
                             <PlainNode.Plain>, </PlainNode.Plain>
                             <PlainNode.Plain>"was"</PlainNode.Plain>
@@ -69,6 +67,25 @@
                         <PlainNode.Plain>", but now is "</PlainNode.Plain>
                         <PlainNode.Plain>a</PlainNode.Plain>
                     </CodeNode.StringConcatenation>
+                    <PlainNode.Plain>;</PlainNode.Plain>
+                </CodeNode.SingleLine>
+                <CodeNode.SingleLine>
+                    <CodeNode.SingleLineList>
+                        <PlainNode.Plain>global::kotlin.io.ConsoleKt</PlainNode.Plain>
+                        <PlainNode.Plain>.</PlainNode.Plain>
+                        <PlainNode.Plain>println</PlainNode.Plain>
+                        <PlainNode.Plain>(</PlainNode.Plain>
+                        <CodeNode.SingleLineList>
+                            <PlainNode.Plain>(</PlainNode.Plain>
+                            <PlainNode.Plain>s1</PlainNode.Plain>
+                            <PlainNode.Plain>)</PlainNode.Plain>
+                            <PlainNode.Plain> + </PlainNode.Plain>
+                            <PlainNode.Plain>(</PlainNode.Plain>
+                            <PlainNode.Plain>s2</PlainNode.Plain>
+                            <PlainNode.Plain>)</PlainNode.Plain>
+                        </CodeNode.SingleLineList>
+                        <PlainNode.Plain>)</PlainNode.Plain>
+                    </CodeNode.SingleLineList>
                     <PlainNode.Plain>;</PlainNode.Plain>
                 </CodeNode.SingleLine>
             </PaddingNode.Block>

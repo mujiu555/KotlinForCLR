@@ -4,5 +4,6 @@ FILE: Main.kt
         lval s1: <implicit> = <strcat>(String(a is ), a#)
         a# = IntegerLiteral(2)
         lval s2: <implicit> = <strcat>(s1#.replace#(String(is), String(was)), String(, but now is ), a#)
+        println#(s1#.plus#(s2#))
     }
 

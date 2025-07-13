@@ -114,6 +114,7 @@ class ClrBuiltinsSymbolProvider(
 	}
 }
 
+@OptIn(SymbolInternals::class)
 @ThreadSafeMutableState
 class ClrCompilerBuiltinSymbolProvider(
 	session: FirSession,
@@ -128,8 +129,14 @@ class ClrCompilerBuiltinSymbolProvider(
 			EffectiveVisibility.Public
 		)
 		classKind = ClassKind.INTERFACE
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Any.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
-	@OptIn(SymbolInternals::class)
 	private val anySymbol = StandardClassIds.Any.buildSymbol(moduleData) { classId, _, _ ->
 		status = FirResolvedDeclarationStatusImpl(
 			Visibilities.Public,
@@ -273,6 +280,13 @@ class ClrCompilerBuiltinSymbolProvider(
 			EffectiveVisibility.Public
 		)
 		classKind = ClassKind.CLASS
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Any.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
 	private val byteArraySymbol = classId("kotlin", "ByteArray").buildSymbol(moduleData) { classId, _, _ ->
 		status = FirResolvedDeclarationStatusImpl(
@@ -281,6 +295,13 @@ class ClrCompilerBuiltinSymbolProvider(
 			EffectiveVisibility.Public
 		)
 		classKind = ClassKind.CLASS
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Any.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
 	private val charArraySymbol = classId("kotlin", "CharArray").buildSymbol(moduleData) { classId, _, _ ->
 		status = FirResolvedDeclarationStatusImpl(
@@ -289,6 +310,13 @@ class ClrCompilerBuiltinSymbolProvider(
 			EffectiveVisibility.Public
 		)
 		classKind = ClassKind.CLASS
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Any.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
 	private val shortArraySymbol = classId("kotlin", "ShortArray").buildSymbol(moduleData) { classId, _, _ ->
 		status = FirResolvedDeclarationStatusImpl(
@@ -297,6 +325,13 @@ class ClrCompilerBuiltinSymbolProvider(
 			EffectiveVisibility.Public
 		)
 		classKind = ClassKind.CLASS
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Any.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
 	private val intArraySymbol = classId("kotlin", "IntArray").buildSymbol(moduleData) { classId, _, _ ->
 		status = FirResolvedDeclarationStatusImpl(
@@ -305,6 +340,13 @@ class ClrCompilerBuiltinSymbolProvider(
 			EffectiveVisibility.Public
 		)
 		classKind = ClassKind.CLASS
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Any.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
 	private val longArraySymbol = classId("kotlin", "LongArray").buildSymbol(moduleData) { classId, _, _ ->
 		status = FirResolvedDeclarationStatusImpl(
@@ -313,6 +355,13 @@ class ClrCompilerBuiltinSymbolProvider(
 			EffectiveVisibility.Public
 		)
 		classKind = ClassKind.CLASS
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Any.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
 	private val floatArraySymbol = classId("kotlin", "FloatArray").buildSymbol(moduleData) { classId, _, _ ->
 		status = FirResolvedDeclarationStatusImpl(
@@ -321,6 +370,13 @@ class ClrCompilerBuiltinSymbolProvider(
 			EffectiveVisibility.Public
 		)
 		classKind = ClassKind.CLASS
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Any.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
 	private val doubleArraySymbol = classId("kotlin", "DoubleArray").buildSymbol(moduleData) { classId, _, _ ->
 		status = FirResolvedDeclarationStatusImpl(
@@ -329,6 +385,13 @@ class ClrCompilerBuiltinSymbolProvider(
 			EffectiveVisibility.Public
 		)
 		classKind = ClassKind.CLASS
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Any.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
 	private val booleanArraySymbol = classId("kotlin", "BooleanArray").buildSymbol(moduleData) { classId, _, _ ->
 		status = FirResolvedDeclarationStatusImpl(
@@ -337,6 +400,13 @@ class ClrCompilerBuiltinSymbolProvider(
 			EffectiveVisibility.Public
 		)
 		classKind = ClassKind.CLASS
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Any.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
 	private val booleanSymbol = StandardClassIds.Boolean.buildSymbol(moduleData) { classId, _, _ ->
 		status = FirResolvedDeclarationStatusImpl(
@@ -345,6 +415,45 @@ class ClrCompilerBuiltinSymbolProvider(
 			EffectiveVisibility.Public
 		)
 		classKind = ClassKind.CLASS
+		declarations += FirNamedFunctionSymbol(
+			callableId = CallableId(classId, Name.identifier("not"))
+		).also { functionSymbol ->
+			buildSimpleFunction {
+				this.moduleData = moduleData
+				origin = FirDeclarationOrigin.BuiltIns
+				status = FirDeclarationStatusImpl(
+					Visibilities.Public,
+					Modality.FINAL
+				).apply {
+					isOperator = true
+				}.resolved(
+					Visibilities.Public,
+					Modality.FINAL,
+					EffectiveVisibility.Public
+				)
+				returnTypeRef = buildResolvedTypeRef {
+					coneType = ConeClassLikeTypeImpl(
+						lookupTag = classId.toLookupTag(),
+						typeArguments = emptyArray(),
+						isMarkedNullable = false
+					)
+				}
+				dispatchReceiverType = ConeClassLikeTypeImpl(
+					lookupTag = classId.toLookupTag(),
+					typeArguments = emptyArray(),
+					isMarkedNullable = false
+				)
+				name = functionSymbol.name
+				symbol = functionSymbol
+			}
+		}.fir
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Any.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
 	private val charSymbol = StandardClassIds.Char.buildSymbol(moduleData) { classId, _, _ ->
 		status = FirResolvedDeclarationStatusImpl(
@@ -353,6 +462,13 @@ class ClrCompilerBuiltinSymbolProvider(
 			EffectiveVisibility.Public
 		)
 		classKind = ClassKind.CLASS
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Any.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
 	private val charSequenceSymbol = StandardClassIds.CharSequence.buildSymbol(moduleData) { classId, _, _ ->
 		status = FirResolvedDeclarationStatusImpl(
@@ -361,6 +477,13 @@ class ClrCompilerBuiltinSymbolProvider(
 			EffectiveVisibility.Public
 		)
 		classKind = ClassKind.INTERFACE
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Any.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
 	private val comparableSymbol = StandardClassIds.Comparable.buildSymbol(moduleData) { classId, _, _ ->
 		status = FirResolvedDeclarationStatusImpl(
@@ -369,6 +492,13 @@ class ClrCompilerBuiltinSymbolProvider(
 			EffectiveVisibility.Public
 		)
 		classKind = ClassKind.INTERFACE
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Any.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
 	private val enumSymbol = StandardClassIds.Enum.buildSymbol(moduleData) { classId, _, _ ->
 		status = FirResolvedDeclarationStatusImpl(
@@ -377,8 +507,14 @@ class ClrCompilerBuiltinSymbolProvider(
 			EffectiveVisibility.Public
 		)
 		classKind = ClassKind.CLASS
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Any.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
-	@OptIn(SymbolInternals::class)
 	private val nothingSymbol = StandardClassIds.Nothing.buildSymbol(moduleData) { classId, _, _ ->
 		status = FirResolvedDeclarationStatusImpl(
 			Visibilities.Public,
@@ -409,6 +545,13 @@ class ClrCompilerBuiltinSymbolProvider(
 				containingClassForStaticMemberAttr = classId.toLookupTag()
 			}
 		}.fir
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Any.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
 	private val numberSymbol = StandardClassIds.Number.buildSymbol(moduleData) { classId, _, _ ->
 		status = FirResolvedDeclarationStatusImpl(
@@ -417,6 +560,13 @@ class ClrCompilerBuiltinSymbolProvider(
 			EffectiveVisibility.Public
 		)
 		classKind = ClassKind.CLASS
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Any.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
 	private val byteSymbol = StandardClassIds.Byte.buildSymbol(moduleData) { classId, _, _ ->
 		status = FirResolvedDeclarationStatusImpl(
@@ -425,6 +575,13 @@ class ClrCompilerBuiltinSymbolProvider(
 			EffectiveVisibility.Public
 		)
 		classKind = ClassKind.CLASS
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Number.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
 	private val shortSymbol = StandardClassIds.Short.buildSymbol(moduleData) { classId, _, _ ->
 		status = FirResolvedDeclarationStatusImpl(
@@ -433,8 +590,14 @@ class ClrCompilerBuiltinSymbolProvider(
 			EffectiveVisibility.Public
 		)
 		classKind = ClassKind.CLASS
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Number.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
-	@OptIn(SymbolInternals::class)
 	private val intSymbol = StandardClassIds.Int.buildSymbol(moduleData) { classId, _, _ ->
 		status = FirResolvedDeclarationStatusImpl(
 			Visibilities.Public,
@@ -538,6 +701,13 @@ class ClrCompilerBuiltinSymbolProvider(
 				symbol = functionSymbol
 			}
 		}.fir
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Number.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
 	private val longSymbol = StandardClassIds.Long.buildSymbol(moduleData) { classId, _, _ ->
 		status = FirResolvedDeclarationStatusImpl(
@@ -546,6 +716,13 @@ class ClrCompilerBuiltinSymbolProvider(
 			EffectiveVisibility.Public
 		)
 		classKind = ClassKind.CLASS
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Number.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
 	private val floatSymbol = StandardClassIds.Float.buildSymbol(moduleData) { classId, _, _ ->
 		status = FirResolvedDeclarationStatusImpl(
@@ -554,8 +731,14 @@ class ClrCompilerBuiltinSymbolProvider(
 			EffectiveVisibility.Public
 		)
 		classKind = ClassKind.CLASS
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Number.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
-	@OptIn(SymbolInternals::class)
 	private val doubleSymbol = StandardClassIds.Double.buildSymbol(moduleData) { classId, _, _ ->
 		status = FirResolvedDeclarationStatusImpl(
 			Visibilities.Public,
@@ -659,6 +842,13 @@ class ClrCompilerBuiltinSymbolProvider(
 				symbol = functionSymbol
 			}
 		}.fir
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Number.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
 	private val stringSymbol = StandardClassIds.String.buildSymbol(moduleData) { classId, _, _ ->
 		status = FirResolvedDeclarationStatusImpl(
@@ -667,6 +857,61 @@ class ClrCompilerBuiltinSymbolProvider(
 			EffectiveVisibility.Public
 		)
 		classKind = ClassKind.CLASS
+		declarations += FirNamedFunctionSymbol(
+			callableId = CallableId(classId, Name.identifier("plus"))
+		).also { functionSymbol ->
+			buildSimpleFunction {
+				this.moduleData = moduleData
+				origin = FirDeclarationOrigin.BuiltIns
+				status = FirDeclarationStatusImpl(
+					Visibilities.Public,
+					Modality.OPEN
+				).apply {
+					isOperator = true
+				}.resolved(
+					Visibilities.Public,
+					Modality.FINAL,
+					EffectiveVisibility.Public
+				)
+				returnTypeRef = buildResolvedTypeRef {
+					coneType = ConeClassLikeTypeImpl(
+						lookupTag = classId.toLookupTag(),
+						typeArguments = emptyArray(),
+						isMarkedNullable = false
+					)
+				}
+				dispatchReceiverType = ConeClassLikeTypeImpl(
+					lookupTag = classId.toLookupTag(),
+					typeArguments = emptyArray(),
+					isMarkedNullable = false
+				)
+				valueParameters += FirValueParameterSymbol(Name.identifier("other")).also { valueParameterSymbol ->
+					buildValueParameter {
+						this.moduleData = moduleData
+						origin = FirDeclarationOrigin.BuiltIns
+						returnTypeRef = buildResolvedTypeRef {
+							coneType = ConeClassLikeTypeImpl(
+								lookupTag = classId.toLookupTag(),
+								typeArguments = emptyArray(),
+								isMarkedNullable = true
+							)
+						}
+						name = valueParameterSymbol.name
+						symbol = valueParameterSymbol
+						containingDeclarationSymbol = functionSymbol
+					}
+				}.fir
+				name = functionSymbol.name
+				symbol = functionSymbol
+			}
+		}.fir
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Any.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
 	private val throwableSymbol = StandardClassIds.Throwable.buildSymbol(moduleData) { classId, _, _ ->
 		status = FirResolvedDeclarationStatusImpl(
@@ -675,6 +920,13 @@ class ClrCompilerBuiltinSymbolProvider(
 			EffectiveVisibility.Public
 		)
 		classKind = ClassKind.CLASS
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Any.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
 
 	private val iterableSymbol = StandardClassIds.Iterable.buildSymbol(moduleData) { classId, _, _ ->
@@ -684,6 +936,13 @@ class ClrCompilerBuiltinSymbolProvider(
 			EffectiveVisibility.Public
 		)
 		classKind = ClassKind.INTERFACE
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Any.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
 	private val mutableIterableSymbol = StandardClassIds.MutableIterable.buildSymbol(moduleData) { classId, _, _ ->
 		status = FirResolvedDeclarationStatusImpl(
@@ -692,6 +951,13 @@ class ClrCompilerBuiltinSymbolProvider(
 			EffectiveVisibility.Public
 		)
 		classKind = ClassKind.INTERFACE
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Any.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
 	private val collectionSymbol = StandardClassIds.Collection.buildSymbol(moduleData) { classId, _, _ ->
 		status = FirResolvedDeclarationStatusImpl(
@@ -700,6 +966,13 @@ class ClrCompilerBuiltinSymbolProvider(
 			EffectiveVisibility.Public
 		)
 		classKind = ClassKind.INTERFACE
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Any.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
 	private val mutableCollectionSymbol = StandardClassIds.MutableCollection.buildSymbol(moduleData) { classId, _, _ ->
 		status = FirResolvedDeclarationStatusImpl(
@@ -708,8 +981,14 @@ class ClrCompilerBuiltinSymbolProvider(
 			EffectiveVisibility.Public
 		)
 		classKind = ClassKind.INTERFACE
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Any.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
-	@OptIn(SymbolInternals::class)
 	private val listSymbol = StandardClassIds.List.buildSymbol(moduleData) { classId, _, classSymbol ->
 		status = FirResolvedDeclarationStatusImpl(
 			Visibilities.Public,
@@ -774,6 +1053,13 @@ class ClrCompilerBuiltinSymbolProvider(
 				symbol = functionSymbol
 			}
 		}.fir
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Any.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
 	private val mutableListSymbol = StandardClassIds.MutableList.buildSymbol(moduleData) { classId, _, _ ->
 		status = FirResolvedDeclarationStatusImpl(
@@ -782,6 +1068,13 @@ class ClrCompilerBuiltinSymbolProvider(
 			EffectiveVisibility.Public
 		)
 		classKind = ClassKind.INTERFACE
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Any.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
 	private val setSymbol = StandardClassIds.Set.buildSymbol(moduleData) { classId, _, _ ->
 		status = FirResolvedDeclarationStatusImpl(
@@ -790,6 +1083,13 @@ class ClrCompilerBuiltinSymbolProvider(
 			EffectiveVisibility.Public
 		)
 		classKind = ClassKind.INTERFACE
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Any.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
 	private val mutableSetSymbol = StandardClassIds.MutableSet.buildSymbol(moduleData) { classId, _, _ ->
 		status = FirResolvedDeclarationStatusImpl(
@@ -798,6 +1098,13 @@ class ClrCompilerBuiltinSymbolProvider(
 			EffectiveVisibility.Public
 		)
 		classKind = ClassKind.INTERFACE
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Any.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
 	private val mapSymbol = StandardClassIds.Map.buildSymbol(moduleData) { classId, _, _ ->
 		status = FirResolvedDeclarationStatusImpl(
@@ -806,6 +1113,13 @@ class ClrCompilerBuiltinSymbolProvider(
 			EffectiveVisibility.Public
 		)
 		classKind = ClassKind.INTERFACE
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Any.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
 	private val mutableMapSymbol = StandardClassIds.MutableMap.buildSymbol(moduleData) { classId, _, _ ->
 		status = FirResolvedDeclarationStatusImpl(
@@ -814,8 +1128,14 @@ class ClrCompilerBuiltinSymbolProvider(
 			EffectiveVisibility.Public
 		)
 		classKind = ClassKind.INTERFACE
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Any.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
-	@OptIn(SymbolInternals::class)
 	private val iteratorSymbol = StandardClassIds.Iterator.buildSymbol(moduleData) { classId, _, classSymbol ->
 		status = FirResolvedDeclarationStatusImpl(
 			Visibilities.Public,
@@ -898,6 +1218,13 @@ class ClrCompilerBuiltinSymbolProvider(
 				symbol = functionSymbol
 			}
 		}.fir
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Any.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
 	private val mutableIteratorSymbol = StandardClassIds.MutableIterator.buildSymbol(moduleData) { classId, _, _ ->
 		status = FirResolvedDeclarationStatusImpl(
@@ -906,6 +1233,13 @@ class ClrCompilerBuiltinSymbolProvider(
 			EffectiveVisibility.Public
 		)
 		classKind = ClassKind.INTERFACE
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Any.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
 	private val listIteratorSymbol = StandardClassIds.ListIterator.buildSymbol(moduleData) { classId, _, _ ->
 		status = FirResolvedDeclarationStatusImpl(
@@ -914,6 +1248,13 @@ class ClrCompilerBuiltinSymbolProvider(
 			EffectiveVisibility.Public
 		)
 		classKind = ClassKind.INTERFACE
+		superTypeRefs += buildResolvedTypeRef {
+			coneType = ConeClassLikeTypeImpl(
+				lookupTag = StandardClassIds.Any.toLookupTag(),
+				typeArguments = emptyArray(),
+				isMarkedNullable = false
+			)
+		}
 	}
 	private val mutableListIteratorSymbol =
 		StandardClassIds.MutableListIterator.buildSymbol(moduleData) { classId, _, _ ->
@@ -923,6 +1264,13 @@ class ClrCompilerBuiltinSymbolProvider(
 				EffectiveVisibility.Public
 			)
 			classKind = ClassKind.INTERFACE
+			superTypeRefs += buildResolvedTypeRef {
+				coneType = ConeClassLikeTypeImpl(
+					lookupTag = StandardClassIds.Any.toLookupTag(),
+					typeArguments = emptyArray(),
+					isMarkedNullable = false
+				)
+			}
 		}
 
 	@OptIn(FirImplementationDetail::class)
@@ -970,7 +1318,6 @@ class ClrCompilerBuiltinSymbolProvider(
 		mutableListIteratorSymbol
 	).associate { it.unpack() }
 
-	@OptIn(SymbolInternals::class)
 	private fun ClassId.buildSymbol(
 		moduleData: FirModuleData,
 		build: FirRegularClassBuilder.(ClassId, FirFileSymbol, FirRegularClassSymbol) -> Unit,
