@@ -16,12 +16,16 @@
 
 package compiler.clr.frontend
 
+import compiler.clr.frontend.symbol.ClrCompilerBuiltinSymbolProvider
+import compiler.clr.frontend.symbol.ClrBuiltinsSymbolProvider
+import compiler.clr.frontend.symbol.ClrSymbolProvider
 import org.jetbrains.kotlin.config.AnalysisFlags
 import org.jetbrains.kotlin.config.LanguageVersionSettings
 import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.checkers.registerCommonCheckers
 import org.jetbrains.kotlin.fir.declarations.FirClass
 import org.jetbrains.kotlin.fir.declarations.FirDeclarationOrigin
+import org.jetbrains.kotlin.fir.declarations.FirRegularClass
 import org.jetbrains.kotlin.fir.declarations.FirResolvePhase
 import org.jetbrains.kotlin.fir.deserialization.ModuleDataProvider
 import org.jetbrains.kotlin.fir.extensions.FirExtensionRegistrar
@@ -30,6 +34,8 @@ import org.jetbrains.kotlin.fir.resolve.ScopeSession
 import org.jetbrains.kotlin.fir.resolve.providers.FirSymbolProvider
 import org.jetbrains.kotlin.fir.resolve.providers.impl.FirBuiltinSyntheticFunctionInterfaceProvider
 import org.jetbrains.kotlin.fir.resolve.providers.impl.FirCloneableSymbolProvider
+import org.jetbrains.kotlin.fir.resolve.providers.impl.FirFallbackBuiltinSymbolProvider
+import org.jetbrains.kotlin.fir.resolve.providers.symbolProvider
 import org.jetbrains.kotlin.fir.scopes.FirContainingNamesAwareScope
 import org.jetbrains.kotlin.fir.scopes.FirKotlinScopeProvider
 import org.jetbrains.kotlin.fir.session.FirAbstractSessionFactory
@@ -43,7 +49,6 @@ import org.jetbrains.kotlin.incremental.components.LookupTracker
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.utils.addToStdlib.runIf
 import org.jetbrains.kotlin.utils.addToStdlib.runUnless
-import kotlin.reflect.KClass
 
 @OptIn(SessionConfiguration::class)
 object FirClrSessionFactory :
@@ -54,24 +59,23 @@ object FirClrSessionFactory :
 		sessionProvider: FirProjectSessionProvider,
 		moduleDataProvider: ModuleDataProvider,
 		projectEnvironment: AbstractProjectEnvironment,
+		extensionRegistrars: List<FirExtensionRegistrar>,
 		scope: AbstractProjectFileSearchScope,
-		assemblies: Map<String, NodeAssembly>,
 		languageVersionSettings: LanguageVersionSettings,
-		extensionRegistrars: List<FirExtensionRegistrar> = emptyList(),
+		assemblies: Map<String, NodeAssembly>,
 	) = createLibrarySession(
 		mainModuleName,
-		LibraryContext(projectEnvironment, assemblies),
+		LibraryContext(assemblies, projectEnvironment),
 		sessionProvider,
 		moduleDataProvider,
 		languageVersionSettings,
 		extensionRegistrars,
 		createProviders = { session, builtinsModuleData, kotlinScopeProvider, syntheticFunctionInterfaceProvider ->
 			listOfNotNull(
-				ClrAssemblyBasedSymbolProvider(
+				ClrSymbolProvider(
 					session,
-					builtinsModuleData,
-					kotlinScopeProvider,
 					assemblies.filterNot { it.key == "kotlin-stdlib" },
+					moduleDataProvider.allModuleData.last()
 				),
 				runUnless(languageVersionSettings.getFlag(AnalysisFlags.stdlibCompilation)) {
 					initializeBuiltinsProvider(
@@ -85,20 +89,11 @@ object FirClrSessionFactory :
 				syntheticFunctionInterfaceProvider,
 				FirCloneableSymbolProvider(session, builtinsModuleData, kotlinScopeProvider),
 			)
-		}
+		},
 	)
 
 	override fun createKotlinScopeProviderForLibrarySession(): FirKotlinScopeProvider {
-		return FirKotlinScopeProvider { klass, declaredScope, useSiteSession, scopeSession, memberRequiredPhase ->
-			wrapScopeWithClrMapped(
-				klass,
-				declaredScope,
-				useSiteSession,
-				scopeSession,
-				memberRequiredPhase,
-				false
-			)
-		}
+		return FirKotlinScopeProvider(::wrapScopeWithClrMapped)
 	}
 
 	override fun FirSession.registerLibrarySessionComponents(c: LibraryContext) {
@@ -106,19 +101,16 @@ object FirClrSessionFactory :
 		registerClrComponents(c.assemblies)
 	}
 
-	// ==================================== Platform session ====================================
-
-	fun createModuleBasedSession(
+	fun createSourceSession(
 		moduleData: FirModuleData,
 		sessionProvider: FirProjectSessionProvider,
-		csharpSourcesScope: AbstractProjectFileSearchScope,
 		projectEnvironment: AbstractProjectEnvironment,
 		extensionRegistrars: List<FirExtensionRegistrar>,
 		languageVersionSettings: LanguageVersionSettings,
-		assemblies: Map<String, NodeAssembly>,
 		lookupTracker: LookupTracker?,
 		enumWhenTracker: EnumWhenTracker?,
 		importTracker: ImportTracker?,
+		assemblies: Map<String, NodeAssembly>,
 		init: FirSessionConfigurator.() -> Unit,
 	): FirSession {
 		val context = SourceContext(assemblies, projectEnvironment)
@@ -134,10 +126,10 @@ object FirClrSessionFactory :
 			init,
 			createProviders = { session, kotlinScopeProvider, symbolProvider, generatedSymbolsProvider, dependencies ->
 				listOfNotNull(
-					ClrSymbolProvider(session, assemblies, session.moduleData),
 					symbolProvider,
 					generatedSymbolsProvider,
-					initializeForStdlibIfNeeded(session, kotlinScopeProvider, dependencies, assemblies),
+					ClrSymbolProvider(session, assemblies, session.moduleData),
+					initializeForStdlibIfNeeded(projectEnvironment, session, kotlinScopeProvider, assemblies),
 					*dependencies.toTypedArray(),
 				)
 			}
@@ -148,19 +140,17 @@ object FirClrSessionFactory :
 		moduleData: FirModuleData,
 		languageVersionSettings: LanguageVersionSettings,
 	): FirKotlinScopeProvider {
-		if (languageVersionSettings.getFlag(AnalysisFlags.stdlibCompilation) && moduleData.isCommon) return FirKotlinScopeProvider()
-
-		val filterOutClrPlatformDeclarations = !(languageVersionSettings.getFlag(AnalysisFlags.stdlibCompilation)
-				&& /*languageVersionSettings.getFlag(AnalysisFlags.expectBuiltinsAsPartOfStdlib)*/ false)
+		if (languageVersionSettings.getFlag(AnalysisFlags.stdlibCompilation) && moduleData.isCommon) {
+			return FirKotlinScopeProvider()
+		}
 		return FirKotlinScopeProvider { klass, declaredScope, useSiteSession, scopeSession, memberRequiredPhase ->
-			val classIdForLog = klass.symbol.classId.asSingleFqName().asString()
 			wrapScopeWithClrMapped(
 				klass,
 				declaredScope,
 				useSiteSession,
 				scopeSession,
 				memberRequiredPhase,
-				filterOutClrPlatformDeclarations = filterOutClrPlatformDeclarations
+				filterOutClrPlatformDeclarations = !languageVersionSettings.getFlag(AnalysisFlags.stdlibCompilation)
 			)
 		}
 	}
@@ -172,52 +162,49 @@ object FirClrSessionFactory :
 	override fun FirSession.registerSourceSessionComponents(c: SourceContext) {
 		registerDefaultComponents()
 		registerClrComponents(c.assemblies)
-		register(FirClrTargetProvider::class as KClass<out FirSessionComponent>, FirClrTargetProvider())
+		register(FirClrTargetProvider::class, FirClrTargetProvider())
 	}
-
-	// ==================================== Common parts ====================================
 
 	private fun FirSession.registerClrComponents(assemblies: Map<String, NodeAssembly>) {
-		register(FirClrAssemblyProvider::class as KClass<out FirSessionComponent>, FirClrAssemblyProvider(assemblies))
+		register(FirClrAssemblyProvider::class, FirClrAssemblyProvider(assemblies))
 	}
 
-	// 为CLR平台创建适当的作用域包装器
 	private fun wrapScopeWithClrMapped(
 		klass: FirClass,
-		declaredScope: FirContainingNamesAwareScope,
+		declaredMemberScope: FirContainingNamesAwareScope,
 		useSiteSession: FirSession,
 		scopeSession: ScopeSession,
 		memberRequiredPhase: FirResolvePhase?,
 		filterOutClrPlatformDeclarations: Boolean = false,
 	): FirContainingNamesAwareScope {
+		if (klass !is FirRegularClass) return declaredMemberScope
 		val classId = klass.symbol.classId
-		val fqName = classId.asSingleFqName().asString()
+		val kotlinUnsafeFqName = classId.asSingleFqName().toUnsafe()
+		val symbolProvider = useSiteSession.symbolProvider
 
 		// 优先处理我们关心的 CLR 库类 (或者任何非 BuiltInsFallback 和非 Source 的 Library origin 类)
 		if (klass.origin == FirDeclarationOrigin.Library) {
-			return ClrClassMemberScope(klass, useSiteSession, scopeSession, declaredScope)
+			return ClrClassMemberScope(klass, useSiteSession, scopeSession, declaredMemberScope)
 		}
 
 		// 对于 Kotlin 的内建回退类
 		if (klass.origin == FirDeclarationOrigin.BuiltInsFallback) {
-			return declaredScope
+			return declaredMemberScope
 		}
 
 		// 对于源码中定义的类
 		if (klass.origin == FirDeclarationOrigin.Source) {
-			return declaredScope
+			return declaredMemberScope
 		}
 
 		// 其他情况（例如 Java 类、Enhancement 等，如果未来支持的话）
 		// 或者如果一个 Library 类因为某些原因没有被上面的 if (klass.origin == FirDeclarationOrigin.Library) 捕获
-		return declaredScope
+		return declaredMemberScope
 	}
 
-	// ==================================== Utilities ====================================
-
 	class LibraryContext(
-		val projectEnvironment: AbstractProjectEnvironment,
 		val assemblies: Map<String, NodeAssembly>,
+		val projectEnvironment: AbstractProjectEnvironment,
 	)
 
 	class SourceContext(
@@ -226,31 +213,22 @@ object FirClrSessionFactory :
 	)
 
 	private fun initializeForStdlibIfNeeded(
+		projectEnvironment: AbstractProjectEnvironment,
 		session: FirSession,
 		kotlinScopeProvider: FirKotlinScopeProvider,
-		dependencies: List<FirSymbolProvider>,
 		assemblies: Map<String, NodeAssembly>,
 	): FirSymbolProvider? {
-		return runIf(session.languageVersionSettings.getFlag(AnalysisFlags.stdlibCompilation) && !session.moduleData.isCommon) {
-			val builtinsSymbolProvider = initializeBuiltinsProvider(
+		return runIf(
+			session.languageVersionSettings.getFlag(AnalysisFlags.stdlibCompilation) &&
+					!session.moduleData.isCommon
+					&& session.moduleData.dependsOnDependencies.isEmpty()
+		) {
+			ClrCompilerBuiltinSymbolProvider(
 				session,
 				session.moduleData,
 				kotlinScopeProvider,
 				assemblies.filter { it.key == "kotlin-stdlib" },
 			)
-			if (session.moduleData.dependsOnDependencies.isNotEmpty()) {
-				runIf(!/*session.languageVersionSettings.getFlag(AnalysisFlags.expectBuiltinsAsPartOfStdlib)*/ false) {
-					val refinedSourceSymbolProviders = dependencies.filter { it.session.kind == FirSession.Kind.Source }
-					ClrActualizingBuiltinSymbolProvider(builtinsSymbolProvider, refinedSourceSymbolProviders)
-				}
-			} else {
-				ClrBuiltinsSymbolProvider(
-					session,
-					session.moduleData,
-					kotlinScopeProvider,
-					assemblies
-				)
-			}
 		}
 	}
 
@@ -261,8 +239,7 @@ object FirClrSessionFactory :
 		assemblies: Map<String, NodeAssembly>,
 	): ClrBuiltinsSymbolProvider = ClrBuiltinsSymbolProvider(
 		session,
-		builtinsModuleData,
-		kotlinScopeProvider,
+		FirFallbackBuiltinSymbolProvider(session, builtinsModuleData, kotlinScopeProvider),
 		assemblies,
 	)
 }

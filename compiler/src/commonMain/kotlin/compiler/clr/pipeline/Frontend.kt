@@ -24,21 +24,23 @@ import compiler.clr.clrDllRoots
 import compiler.clr.frontend.*
 import compiler.clr.frontend.KotlinCoreEnvironment.Companion.configureProjectEnvironment
 import kotlinx.coroutines.*
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.decodeFromStream
 import org.jetbrains.kotlin.cli.common.*
 import org.jetbrains.kotlin.cli.common.config.KotlinSourceRoot
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.cli.jvm.compiler.JvmPackagePartProvider
-import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCliJavaFileManagerImpl
 import org.jetbrains.kotlin.cli.jvm.compiler.setupHighestLanguageLevel
 import org.jetbrains.kotlin.cli.jvm.compiler.setupIdeaStandaloneExecution
 import org.jetbrains.kotlin.cli.jvm.index.JavaRoot
 import org.jetbrains.kotlin.cli.jvm.index.JvmDependenciesDynamicCompoundIndex
 import org.jetbrains.kotlin.cli.jvm.index.JvmDependenciesIndexImpl
-import org.jetbrains.kotlin.cli.jvm.index.SingleJavaFileRootsIndex
+import org.jetbrains.kotlin.cli.pipeline.CheckCompilationErrors
 import org.jetbrains.kotlin.cli.pipeline.ConfigurationPipelineArtifact
+import org.jetbrains.kotlin.cli.pipeline.PerformanceNotifications
 import org.jetbrains.kotlin.cli.pipeline.PipelinePhase
-import org.jetbrains.kotlin.com.intellij.core.CoreJavaFileManager
 import org.jetbrains.kotlin.com.intellij.openapi.Disposable
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.com.intellij.openapi.vfs.StandardFileSystems
@@ -50,10 +52,11 @@ import org.jetbrains.kotlin.config.*
 import org.jetbrains.kotlin.fir.BinaryModuleData
 import org.jetbrains.kotlin.fir.DependencyListForCliModule
 import org.jetbrains.kotlin.fir.declarations.builder.buildImport
+import org.jetbrains.kotlin.fir.extensions.FirExtensionRegistrar
 import org.jetbrains.kotlin.fir.pipeline.FirResult
 import org.jetbrains.kotlin.fir.pipeline.buildFirViaLightTree
 import org.jetbrains.kotlin.fir.pipeline.resolveAndCheckFir
-import org.jetbrains.kotlin.fir.renderer.FirRenderer
+import org.jetbrains.kotlin.fir.render
 import org.jetbrains.kotlin.fir.session.environment.AbstractProjectFileSearchScope
 import org.jetbrains.kotlin.load.kotlin.MetadataFinderFactory
 import org.jetbrains.kotlin.load.kotlin.PackagePartProvider
@@ -63,18 +66,17 @@ import org.jetbrains.kotlin.name.Name
 import java.io.File
 
 object Frontend : PipelinePhase<ConfigurationPipelineArtifact, ClrFrontendPipelineArtifact>(
-	name = "ClrFrontendPipelinePhase"
+	name = "ClrFrontendPipelinePhase",
+	postActions = setOf(PerformanceNotifications.AnalysisFinished, CheckCompilationErrors.CheckDiagnosticCollector)
 ) {
 	override fun executePhase(input: ConfigurationPipelineArtifact): ClrFrontendPipelineArtifact? {
 		val (configuration, diagnosticsCollector, rootDisposable) = input
-		val collector = configuration.messageCollector
+		val messageCollector = configuration.messageCollector
 
+		val perfManager = configuration.perfManager
 		val chunk = configuration.moduleChunk!!
-		val moduleName = when {
-			chunk.modules.size > 1 -> chunk.modules.joinToString(separator = "+") { it.getModuleName() }
-			else -> configuration.moduleName!!
-		}
-		val (libraryList, assemblies) = createLibraryListForClr(moduleName, configuration)
+
+		val assemblies = processAssemblies(configuration)
 
 		val (environment, sourcesProvider) = createEnvironmentAndSources(
 			configuration,
@@ -84,10 +86,22 @@ object Frontend : PipelinePhase<ConfigurationPipelineArtifact, ClrFrontendPipeli
 		val sources = sourcesProvider()
 		val allSources = sources.allFiles
 
-		if (allSources.isEmpty()) {
-			collector.report(CompilerMessageSeverity.ERROR, "No source files")
+		if (
+			allSources.isEmpty() &&
+			!configuration.allowNoSourceFiles
+		) {
+			if (!configuration.printVersion) {
+				messageCollector.report(CompilerMessageSeverity.ERROR, "No source files")
+			}
 			return null
 		}
+
+		val moduleName = when {
+			chunk.modules.size > 1 -> chunk.modules.joinToString(separator = "+") { it.getModuleName() }
+			else -> configuration.moduleName!!
+		}
+
+		val libraryList = createLibraryListForClr(moduleName, configuration)
 
 		val sessionsWithSources = prepareClrSessions(
 			files = allSources,
@@ -101,90 +115,114 @@ object Frontend : PipelinePhase<ConfigurationPipelineArtifact, ClrFrontendPipeli
 			fileBelongsToModule = sources.fileBelongsToModuleForLt
 		)
 
-		val outputs = sessionsWithSources.map { (session, sources) ->
-			val rawFirFiles = session.buildFirViaLightTree(sources, diagnosticsCollector)
-			rawFirFiles.forEach {
-				listOf(
-					"kotlin",
-					"kotlin.annotation",
-					"kotlin.collections",
-					"kotlin.comparisons",
-					"kotlin.io",
-					"kotlin.ranges",
-					"kotlin.sequences",
-					"kotlin.text",
-					"kotlin.clr",
-				).forEach { pack ->
-					if (
-						!it.imports.any { import ->
-							import.importedFqName?.asString() == pack
+		val countFilesAndLines = if (perfManager == null) null else perfManager::addSourcesStats
+		val outputs = File(input.configuration.get(CLRConfigurationKeys.OUTPUT_DIRECTORY)!!, "Raw Front IR.txt")
+			.printWriter().use { writer ->
+				sessionsWithSources.map { (session, sources) ->
+					val rawFirFiles = session.buildFirViaLightTree(sources, diagnosticsCollector, countFilesAndLines)
+					rawFirFiles.forEach { fir ->
+						listOf(
+							"kotlin",
+							"kotlin.annotation",
+							"kotlin.collections",
+							"kotlin.comparisons",
+							"kotlin.io",
+							"kotlin.ranges",
+							"kotlin.sequences",
+							"kotlin.text",
+							"kotlin.clr",
+						).forEach { pack ->
+							if (
+								!fir.imports.any { import ->
+									import.importedFqName?.asString() == pack
+								}
+							) {
+								(fir.imports as MutableList) += buildImport {
+									importedFqName = FqName(pack)
+									isAllUnder = true
+								}
+							}
 						}
-					) {
-						(it.imports as MutableList) += buildImport {
-							importedFqName = FqName(pack)
-							isAllUnder = true
-						}
+						writer.println(fir.render())
 					}
+					resolveAndCheckFir(session, rawFirFiles, diagnosticsCollector)
 				}
 			}
-			File(input.configuration.get(CLRConfigurationKeys.OUTPUT_DIRECTORY)!!, "Raw Front IR.txt").printWriter()
-				.use { writer ->
-					rawFirFiles.forEach { fir ->
-						writer.println(FirRenderer().renderElementAsString(fir))
-					}
-				}
-			resolveAndCheckFir(session, rawFirFiles, diagnosticsCollector)
-		}
+
+		val kotlinPackageUsageIsFine = outputs.all { checkKotlinPackageUsageForLightTree(configuration, it.fir) }
+
+		if (!kotlinPackageUsageIsFine) return null
 
 		val firResult = FirResult(outputs)
 		File(input.configuration.get(CLRConfigurationKeys.OUTPUT_DIRECTORY)!!, "Front IR.txt").printWriter()
 			.use { writer ->
 				firResult.outputs.forEach { output ->
 					output.fir.forEach { fir ->
-						writer.println(FirRenderer().renderElementAsString(fir))
+						writer.println(fir.render())
 					}
 				}
 			}
-
 		return ClrFrontendPipelineArtifact(firResult, configuration, environment, diagnosticsCollector, allSources)
 	}
 
-	fun createLibraryListForClr(
-		moduleName: String,
+	@OptIn(ExperimentalSerializationApi::class)
+	private fun processAssemblies(
 		configuration: CompilerConfiguration,
-	): Pair<DependencyListForCliModule, Map<String, NodeAssembly>> {
-		// 收集所有DLL路径
+	): Map<String, NodeAssembly> {
 		val dllPaths = configuration.clrDllRoots
+		val kfcDir = File(System.getProperty("user.home"), ".kfc")
+		val cacheDir = File(kfcDir, "cache")
+		val manifestFile = File(cacheDir, "manifest.json")
+		val manifestRaw = when (manifestFile.exists()) {
+			true -> Json.decodeFromStream<MutableMap<String, String>>(manifestFile.inputStream())
+			else -> mutableMapOf()
+		}
+		val manifest = manifestRaw.mapValues { (_, filename) ->
+			Json.decodeFromStream<NodeAssembly>(File(cacheDir, filename).inputStream())
+		}
 
-		// 使用AssemblyResolver解析DLL
+		if (!kfcDir.exists()) kfcDir.mkdir()
+		if (!cacheDir.exists()) cacheDir.mkdir()
+
 		val assemblies = runBlocking {
 			val scope = CoroutineScope(Dispatchers.IO)
 			dllPaths
 				.map { it.absolutePath }
-				.map {
+				.map { assembly ->
 					scope.async {
-						resolveAssembly(
-							dotnetHome = configuration.get(CLRConfigurationKeys.DOTNET_HOME)?.absolutePath,
-							programPath = configuration.get(CLRConfigurationKeys.ASSEMBLY_RESOLVER)!!.absolutePath,
-							assemblies = dllPaths.map(File::getAbsolutePath),
-							assembly = it
-						)
+						manifest[assembly]?.also { println("load from cache: $assembly") }
+							?: resolveAssembly(
+								dotnetHome = configuration.get(CLRConfigurationKeys.DOTNET_HOME)?.absolutePath,
+								programPath = configuration.get(CLRConfigurationKeys.ASSEMBLY_RESOLVER)!!.absolutePath,
+								assemblies = dllPaths.map(File::getAbsolutePath),
+								assembly = assembly
+							).also {
+								manifestRaw[assembly] = "${it.name}.json"
+								File(cacheDir, "${it.name}.json").writeText(Json.encodeToString(it))
+							}
 					}
 				}
 				.awaitAll()
 				.associateBy { it.name }
 		}
 
-		// 创建依赖列表
+		manifestFile.writeText(Json.encodeToString(manifestRaw))
+
+		return assemblies
+	}
+
+	fun createLibraryListForClr(
+		moduleName: String,
+		configuration: CompilerConfiguration,
+	): DependencyListForCliModule {
 		val binaryModuleData = BinaryModuleData.initialize(
 			Name.identifier(moduleName),
 			ClrPlatforms.unspecifiedClrPlatform
 		)
 		val libraryList = DependencyListForCliModule.build(binaryModuleData) {
-			dependencies(dllPaths.map { it.toPath() })
+			dependencies(configuration.clrDllRoots.map { it.absolutePath })
 		}
-
-		return libraryList to assemblies
+		return libraryList
 	}
 
 	private fun createEnvironmentAndSources(
@@ -221,8 +259,6 @@ object Frontend : PipelinePhase<ConfigurationPipelineArtifact, ClrFrontendPipeli
 		val project = projectEnvironment.project
 		val localFileSystem = VirtualFileManager.getInstance().getFileSystem(StandardFileSystems.FILE_PROTOCOL)
 
-		val javaFileManager = project.getService(CoreJavaFileManager::class.java) as KotlinCliJavaFileManagerImpl
-
 		val outputDirectory = configuration.get(CLRConfigurationKeys.OUTPUT_DIRECTORY)?.absolutePath
 
 		val contentRoots = configuration.getList(CLIConfigurationKeys.CONTENT_ROOTS)
@@ -240,7 +276,6 @@ object Frontend : PipelinePhase<ConfigurationPipelineArtifact, ClrFrontendPipeli
 		val (roots, singleCSharpFileRoots) =
 			initialRoots.partition { (file) -> file.isDirectory || file.extension != "cs" }
 
-		// 创建依赖索引
 		val rootsIndex = JvmDependenciesDynamicCompoundIndex(shouldOnlyFindFirstClass = true).apply {
 			addIndex(JvmDependenciesIndexImpl(roots, shouldOnlyFindFirstClass = true))
 			indexedRoots.forEach {
@@ -260,14 +295,7 @@ object Frontend : PipelinePhase<ConfigurationPipelineArtifact, ClrFrontendPipeli
 			localFileSystem,
 			{ JvmPackagePartProvider(configuration.languageVersionSettings, it) },
 			initialRoots, configuration
-		).also {
-			javaFileManager.initialize(
-				rootsIndex,
-				it.packagePartProviders,
-				SingleJavaFileRootsIndex(singleCSharpFileRoots),
-				configuration.getBoolean(JVMConfigurationKeys.USE_PSI_CLASS_FILES_READING)
-			)
-		}
+		)
 	}
 
 	private class ProjectEnvironmentWithCoreEnvironmentEmulation(
@@ -300,6 +328,7 @@ object Frontend : PipelinePhase<ConfigurationPipelineArtifact, ClrFrontendPipeli
 		isCommonSource: (F) -> Boolean,
 		fileBelongsToModule: (F, String) -> Boolean,
 	): List<SessionWithSources<F>> {
+		val extensionRegistrars = FirExtensionRegistrar.getInstances(projectEnvironment.project)
 		return SessionConstructionUtils.prepareSessions(
 			files = files,
 			configuration = configuration,
@@ -316,23 +345,23 @@ object Frontend : PipelinePhase<ConfigurationPipelineArtifact, ClrFrontendPipeli
 					sessionProvider,
 					libraryList.moduleDataProvider,
 					projectEnvironment,
+					extensionRegistrars,
 					librariesScope,
-					assemblies,
 					configuration.languageVersionSettings,
+					assemblies,
 				)
 			},
 			createSourceSession = { moduleFiles, moduleData, sessionProvider, sessionConfigurator ->
-				FirClrSessionFactory.createModuleBasedSession(
+				FirClrSessionFactory.createSourceSession(
 					moduleData,
 					sessionProvider,
-					projectEnvironment.getSearchScopeForProjectJavaSources(),
 					projectEnvironment,
-					emptyList(),
+					extensionRegistrars,
 					configuration.languageVersionSettings,
-					assemblies,
 					configuration.get(CommonConfigurationKeys.LOOKUP_TRACKER),
 					configuration.get(CommonConfigurationKeys.ENUM_WHEN_TRACKER),
 					configuration.get(CommonConfigurationKeys.IMPORT_TRACKER),
+					assemblies,
 					sessionConfigurator,
 				)
 			}

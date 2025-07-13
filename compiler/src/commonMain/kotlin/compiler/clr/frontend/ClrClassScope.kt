@@ -16,6 +16,7 @@
 
 package compiler.clr.frontend
 
+import compiler.clr.frontend.symbol.ClrSymbolProvider
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.FirClass
 import org.jetbrains.kotlin.fir.declarations.FirSimpleFunction

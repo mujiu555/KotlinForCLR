@@ -46,14 +46,9 @@ class ClrBackendContext(
     override val irBuiltIns: IrBuiltIns,
     val symbolTable: SymbolTable
 ) : CommonBackendContext {
-    // 基础组件
     override val irFactory: IrFactory = IrFactoryImpl
     override val typeSystem: IrTypeSystemContext = JvmIrTypeSystemContext(irBuiltIns)
-    
-    // 映射器
     val defaultTypeMapper = IrTypeMapper(this)
-
-    // 支持组件
     override val innerClassesSupport: InnerClassesSupport = JvmInnerClassesSupport(irFactory)
     override val mapping: Mapping = Mapping()
     override val ir = ClrIr()

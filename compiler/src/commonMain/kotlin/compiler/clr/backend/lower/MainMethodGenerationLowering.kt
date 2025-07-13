@@ -39,6 +39,7 @@ import org.jetbrains.kotlin.ir.types.*
 import org.jetbrains.kotlin.ir.util.constructors
 import org.jetbrains.kotlin.ir.util.createThisReceiverParameter
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.hasShape
 import org.jetbrains.kotlin.ir.util.isFileClass
 import org.jetbrains.kotlin.load.java.JavaDescriptorVisibilities
 import org.jetbrains.kotlin.name.Name
@@ -50,7 +51,6 @@ import org.jetbrains.kotlin.types.Variance
 internal class MainMethodGenerationLowering(private val context: ClrBackendContext) : ClassLoweringPass {
 	@OptIn(UnsafeDuringIrConstructionAPI::class)
 	override fun lower(irClass: IrClass) {
-		if (!/*context.config.languageVersionSettings.supportsFeature(LanguageFeature.ExtendedMainConvention)*/ true) return
 		if (!irClass.isFileClass) return
 
 		irClass.functions.find { it.isMainMethod() }?.let { mainMethod ->
@@ -75,8 +75,7 @@ internal class MainMethodGenerationLowering(private val context: ClrBackendConte
 
 	private fun IrSimpleFunction.isParameterlessMainMethod(): Boolean =
 		typeParameters.isEmpty() &&
-				extensionReceiverParameter == null &&
-				valueParameters.isEmpty() &&
+				hasShape(regularParameters = 0) &&
 				returnType.isUnit() &&
 				name.asString() == "main"
 
@@ -155,10 +154,7 @@ internal class MainMethodGenerationLowering(private val context: ClrBackendConte
 					invoke.body = backendContext.createIrBuilder(invoke.symbol).irBlockBody {
 						+irReturn(irCall(target.symbol).also { call ->
 							if (args != null) {
-								call.putValueArgument(
-									0,
-									irGetField(irGet(invoke.dispatchReceiverParameter!!), argsField!!)
-								)
+								call.arguments[0] = irGetField(irGet(invoke.dispatchReceiverParameter!!), argsField!!)
 							}
 						})
 					}
@@ -173,7 +169,7 @@ internal class MainMethodGenerationLowering(private val context: ClrBackendConte
 
 					constructor.body = backendContext.createIrBuilder(constructor.symbol).irBlockBody {
 						+irDelegatingConstructorCall(superClassConstructor).also {
-							it.putValueArgument(0, irInt(1))
+							it.arguments[0] = irInt(1)
 						}
 						if (args != null) {
 							+irSetField(irGet(wrapper.thisReceiver!!), argsField!!, irGet(param!!))
@@ -183,18 +179,16 @@ internal class MainMethodGenerationLowering(private val context: ClrBackendConte
 			}
 
 			+irCall(backendContext.ir.symbols.runSuspendFunction).apply {
-				putValueArgument(
-					0, IrConstructorCallImpl.fromSymbolOwner(
-						UNDEFINED_OFFSET,
-						UNDEFINED_OFFSET,
-						wrapperConstructor.returnType,
-						wrapperConstructor.symbol
-					).also {
-						if (args != null) {
-							it.putValueArgument(0, irGet(args))
-						}
+				arguments[0] = IrConstructorCallImpl.fromSymbolOwner(
+					UNDEFINED_OFFSET,
+					UNDEFINED_OFFSET,
+					wrapperConstructor.returnType,
+					wrapperConstructor.symbol
+				).also {
+					if (args != null) {
+						it.arguments[0] = irGet(args)
 					}
-				)
+				}
 			}
 		}
 	}

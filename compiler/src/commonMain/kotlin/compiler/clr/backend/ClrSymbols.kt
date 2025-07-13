@@ -72,21 +72,6 @@ class ClrSymbols(
 
 	private val kotlinInternalPackage: IrPackageFragment = createPackage(FqName("kotlin.internal"))
 
-	/**
-	 * A special package for functions representing dynamic symbols referenced by the `INVOKEDYNAMIC` instruction — e.g.,
-	 *  `get(Ljava/lang/String;)Ljava/util/function/Supplier;`
-	 * in
-	 * ```
-	 * INVOKEDYNAMIC get(Ljava/lang/String;)Ljava/util/function/Supplier; [
-	 *     H_INVOKESTATIC java/lang/invoke/LambdaMetafactory.metafactory(...)Ljava/lang/invoke/CallSite;
-	 *     ...
-	 * ]
-	 * ```
-	 * Such functions don't exist as methods in the actual bytecode
-	 * (they are expected to be provided at run-time by the corresponding bootstrap method).
-	 */
-	val kotlinJvmInternalInvokeDynamicPackage: IrPackageFragment = createPackage(FqName("kotlin.jvm.internal.invokeDynamic"))
-
 	private fun createPackage(fqName: FqName): IrPackageFragment =
 		createEmptyExternalPackageFragment(context.state.module, fqName)
 

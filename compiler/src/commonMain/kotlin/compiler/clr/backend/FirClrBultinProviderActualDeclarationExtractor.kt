@@ -16,7 +16,7 @@
 
 package compiler.clr.backend
 
-import compiler.clr.frontend.ClrActualizingBuiltinSymbolProvider
+import compiler.clr.frontend.symbol.ClrActualizingBuiltinSymbolProvider
 import org.jetbrains.kotlin.backend.common.actualizer.IrExtraActualDeclarationExtractor
 import org.jetbrains.kotlin.config.AnalysisFlags
 import org.jetbrains.kotlin.fir.backend.Fir2IrClassifierStorage

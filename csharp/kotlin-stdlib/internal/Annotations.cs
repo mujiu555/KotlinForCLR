@@ -14,6 +14,8 @@
    limitations under the License.
  */
 
+using System;
+
 namespace kotlin.@internal;
 
 internal class NoInfer : Attribute;

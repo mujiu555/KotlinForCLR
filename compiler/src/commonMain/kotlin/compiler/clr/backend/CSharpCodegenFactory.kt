@@ -55,12 +55,9 @@ class CSharpCodegenFactory {
 			symbolTable
 		)
 
-
 		ExternalDependenciesGenerator(symbolTable, irProviders).generateUnboundSymbolsAsDependencies()
 
-		val allBuiltins = //irModuleFragment.files.filter { it.isJvmBuiltin }
-			emptyList<IrFile>()
-		irModuleFragment.files.removeIf { it.isBytecodeGenerationSuppressed }
+		val allBuiltins = emptyList<IrFile>()
 
 		clrLoweringPhases.invokeToplevel(state.configuration.phaseConfig ?: PhaseConfig(), context, irModuleFragment)
 

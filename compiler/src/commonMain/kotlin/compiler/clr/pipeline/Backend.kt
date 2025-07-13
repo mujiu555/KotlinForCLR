@@ -17,21 +17,23 @@
 package compiler.clr.pipeline
 
 import compiler.clr.CLRConfigurationKeys
-import compiler.clr.applyModuleProperties
 import compiler.clr.backend.CSharpCodegenFactory
 import compiler.clr.backend.KotlinToCSharpCompiler
 import compiler.clr.backend.KotlinToCSharpCompiler.toBackendInput
 import org.jetbrains.kotlin.cli.common.buildFile
 import org.jetbrains.kotlin.cli.common.moduleChunk
+import org.jetbrains.kotlin.cli.pipeline.CheckCompilationErrors
 import org.jetbrains.kotlin.cli.pipeline.PipelinePhase
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.ir.declarations.impl.IrModuleFragmentImpl
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.modules.Module
 import java.io.File
+import kotlin.collections.setOf
 
 object Backend : PipelinePhase<ClrFir2IrPipelineArtifact, ClrBinaryPipelineArtifact>(
-	name = "ClrBackendPipelineStep"
+	name = "ClrBackendPipelineStep",
+	postActions = setOf(CheckCompilationErrors.CheckDiagnosticCollector)
 ) {
 	override fun executePhase(input: ClrFir2IrPipelineArtifact): ClrBinaryPipelineArtifact? {
 		val (fir2IrResult, configuration, environment, diagnosticCollector, _) = input
@@ -73,11 +75,12 @@ object Backend : PipelinePhase<ClrFir2IrPipelineArtifact, ClrBinaryPipelineArtif
 			)
 		}
 
-		File(input.configuration.get(CLRConfigurationKeys.OUTPUT_DIRECTORY)!!, "CLR IR.txt").printWriter().use { writer ->
-			codegenInputs.forEach {
-				writer.println(it.module.dump())
+		File(input.configuration.get(CLRConfigurationKeys.OUTPUT_DIRECTORY)!!, "CLR IR.txt").printWriter()
+			.use { writer ->
+				codegenInputs.forEach {
+					writer.println(it.module.dump())
+				}
 			}
-		}
 
 		val outputs = codegenInputs.map {
 			KotlinToCSharpCompiler.runCodegen(
@@ -92,9 +95,10 @@ object Backend : PipelinePhase<ClrFir2IrPipelineArtifact, ClrBinaryPipelineArtif
 		return ClrBinaryPipelineArtifact(outputs)
 	}
 
-	private fun CompilerConfiguration.createConfigurationForModule(module: Module, buildFile: File?): CompilerConfiguration {
-		return copy().apply {
-			applyModuleProperties(module, buildFile)
-		}
+	private fun CompilerConfiguration.createConfigurationForModule(
+		module: Module,
+		buildFile: File?,
+	): CompilerConfiguration {
+		return copy()
 	}
 }

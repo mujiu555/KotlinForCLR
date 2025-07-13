@@ -1,6 +1,8 @@
 FILE: Main.kt
     public? final? fun main(): R|kotlin/Unit| {
-        lval a: String? = Null(null)
-        println#(a#)
+        lvar a: <implicit> = IntegerLiteral(1)
+        lval s1: <implicit> = <strcat>(String(a is ), a#)
+        a# = IntegerLiteral(2)
+        lval s2: <implicit> = <strcat>(s1#.replace#(String(is), String(was)), String(, but now is ), a#)
     }
 

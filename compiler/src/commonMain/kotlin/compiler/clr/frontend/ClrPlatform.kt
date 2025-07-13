@@ -25,21 +25,21 @@ abstract class ClrPlatform : SimplePlatform("CLR") {
 		get() = "CLR "
 }
 
-class JvmPlatformImpl : ClrPlatform() {
+class ClrPlatformImpl : ClrPlatform() {
 	override fun toString(): String = platformName
 
 	override val oldFashionedDescription: String
-		get() = "JVM"
+		get() = "CLR"
 
 	override val targetPlatformVersion: TargetPlatformVersion
 		get() = TargetPlatformVersion.NoVersion
 
-	override fun equals(other: Any?): Boolean = other is JvmPlatformImpl
-	override fun hashCode(): Int = JvmPlatformImpl::class.hashCode()
+	override fun equals(other: Any?): Boolean = other is ClrPlatformImpl
+	override fun hashCode(): Int = ClrPlatformImpl::class.hashCode()
 }
 
 object ClrPlatforms {
-	private val UNSPECIFIED_SIMPLE_CLR_PLATFORM = JvmPlatformImpl()
+	private val UNSPECIFIED_SIMPLE_CLR_PLATFORM = ClrPlatformImpl()
 
 	val unspecifiedClrPlatform: TargetPlatform
 		get() = CompatClrPlatform

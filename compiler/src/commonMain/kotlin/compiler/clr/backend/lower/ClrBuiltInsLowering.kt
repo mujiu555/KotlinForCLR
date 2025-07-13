@@ -37,6 +37,7 @@ import org.jetbrains.kotlin.ir.symbols.UnsafeDuringIrConstructionAPI
 import org.jetbrains.kotlin.ir.types.*
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.util.capitalizeDecapitalize.toLowerCaseAsciiOnly
+import org.jetbrains.kotlin.utils.addToStdlib.assignFrom
 
 @PhaseDescription(name = "JvmBuiltInsLowering")
 internal class ClrBuiltInsLowering(val context: ClrBackendContext) : FileLoweringPass {
@@ -50,7 +51,7 @@ internal class ClrBuiltInsLowering(val context: ClrBackendContext) : FileLowerin
 				val parentClassName = callee.parent.fqNameForIrSerialization.asString()
 				val functionName = callee.name.asString()
 				if (parentClassName == "kotlin.CompareToKt" && functionName == "compareTo") {
-					val operandType = expression.getValueArgument(0)!!.type
+					val operandType = expression.arguments[0]!!.type
 					when {
 						operandType.isUInt() -> return expression.replaceWithCallTo(context.ir.symbols.compareUnsignedInt)
 						operandType.isULong() -> return expression.replaceWithCallTo(context.ir.symbols.compareUnsignedLong)
@@ -63,7 +64,7 @@ internal class ClrBuiltInsLowering(val context: ClrBackendContext) : FileLowerin
 
 				return when {
 					callee.isArrayOf() ->
-						expression.getValueArgument(0)
+						expression.arguments[0]
 							?: throw AssertionError("Argument #0 expected: ${expression.dump()}")
 
 					/*callee.isEmptyArray() ->
@@ -103,19 +104,8 @@ internal class ClrBuiltInsLowering(val context: ClrBackendContext) : FileLowerin
 			intrinsicCallType,
 			replacement
 		).also { newCall ->
-			var valueArgumentOffset = 0
-
-			fun tryToAddCoercedArgument(expr: IrExpression): Boolean {
-				val coercedExpr = expr.coerceIfPossible(replacement.owner.valueParameters[valueArgumentOffset].type)
-					?: return false
-				newCall.putValueArgument(valueArgumentOffset++, coercedExpr)
-				return true
-			}
-
-			this.extensionReceiver?.let { if (!tryToAddCoercedArgument(it)) return this@replaceWithCallTo }
-			this.dispatchReceiver?.let { if (!tryToAddCoercedArgument(it)) return this@replaceWithCallTo }
-			for (index in 0 until valueArgumentsCount) {
-				if (!tryToAddCoercedArgument(getValueArgument(index)!!)) return this@replaceWithCallTo
+			newCall.arguments.assignFrom(replacement.owner.parameters zip arguments) { (parameter, argument) ->
+				argument!!.coerceIfPossible(parameter.type) ?: return this@replaceWithCallTo
 			}
 		}
 
@@ -140,7 +130,7 @@ internal class ClrBuiltInsLowering(val context: ClrBackendContext) : FileLowerin
 				.also { call ->
 					call.typeArguments[0] = type
 					call.typeArguments[1] = toType
-					call.putValueArgument(0, this)
+					call.arguments[0] = this
 				}
 	}
 }
@@ -159,8 +149,6 @@ internal fun IrFunction.isArrayOf(): Boolean {
 	}
 	return parent.packageFqName == StandardNames.BUILT_INS_PACKAGE_FQ_NAME &&
 			name.asString().let { it in PRIMITIVE_ARRAY_OF_NAMES || it == ARRAY_OF_NAME } &&
-			extensionReceiverParameter == null &&
-			dispatchReceiverParameter == null &&
-			valueParameters.size == 1 &&
-			valueParameters[0].isVararg
+			hasShape(regularParameters = 1) &&
+			parameters[0].isVararg
 }
