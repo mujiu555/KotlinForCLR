@@ -44,7 +44,11 @@ import java.io.File
 
 object Fir2Ir : PipelinePhase<ClrFrontendPipelineArtifact, ClrFir2IrPipelineArtifact>(
 	name = "ClrFir2IrPipelinePhase",
-	postActions = setOf(CheckCompilationErrors.CheckDiagnosticCollector)
+	preActions = setOf(PerformanceNotifications.TranslationToIrStarted),
+	postActions = setOf(
+		PerformanceNotifications.TranslationToIrFinished,
+		CheckCompilationErrors.CheckDiagnosticCollector
+	)
 ) {
 	override fun executePhase(input: ClrFrontendPipelineArtifact): ClrFir2IrPipelineArtifact? {
 		val (firResult, configuration, environment, diagnosticCollector, sourceFiles) = input

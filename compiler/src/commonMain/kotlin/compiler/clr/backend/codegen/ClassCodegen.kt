@@ -19,6 +19,7 @@ package compiler.clr.backend.codegen
 import compiler.clr.backend.ClrBackendContext
 import compiler.clr.backend.mapping.IrTypeMapper
 import compiler.clr.backend.mapping.TypeStyle
+import org.jetbrains.kotlin.DeprecatedForRemovalCompilerApi
 import org.jetbrains.kotlin.descriptors.ClassKind.*
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Modality.*
@@ -1149,6 +1150,7 @@ class ClassCodegen(val context: ClrBackendContext) {
 		OPEN -> plainPlain("")
 	}
 
+	@OptIn(DeprecatedForRemovalCompilerApi::class)
 	private val IrFunctionAccessExpression.valueArguments
 		get() = List(valueArgumentsCount) { getValueArgument(it) }
 }

@@ -22,9 +22,19 @@ import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.cli.common.messages.MessageRenderer
 import org.jetbrains.kotlin.cli.common.messages.PrintingMessageCollector
 import org.jetbrains.kotlin.config.Services
+import org.jetbrains.kotlin.platform.TargetPlatform
+import org.jetbrains.kotlin.platform.isCommon
+import org.jetbrains.kotlin.util.PerformanceManager
+import org.jetbrains.kotlin.util.PerformanceManagerImpl
 import java.io.PrintStream
 
 abstract class Compiler<A : CommonCompilerArguments> {
+	abstract val platform: TargetPlatform
+
+	open val defaultPerformanceManager: PerformanceManager by lazy {
+		PerformanceManagerImpl(platform, "Kotlin to ${if (platform.isCommon()) "Metadata" else platform.first().platformName} compiler")
+	}
+
 	abstract fun doExecute(
 		arguments: A,
 		services: Services,

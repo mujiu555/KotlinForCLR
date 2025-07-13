@@ -1,28 +1,16 @@
 MODULE_FRAGMENT name:<main>
   FILE fqName:<root> fileName:C:/Users/Yurin/IdeaProjects/KotlinForCLR/kotlin/src/Main.kt
     CLASS FILE_CLASS CLASS name:MainKt modality:FINAL visibility:public superTypes:[kotlin.Any]
-      $this: VALUE_PARAMETER INSTANCE_RECEIVER name:<this> type:<root>.MainKt
-      FUN name:main visibility:public modality:FINAL <> () returnType:kotlin.Unit
+      thisReceiver: VALUE_PARAMETER INSTANCE_RECEIVER kind:DispatchReceiver name:<this> type:<root>.MainKt
+      FUN name:main visibility:public modality:FINAL returnType:kotlin.Unit
         BLOCK_BODY
-          VAR name:a type:kotlin.Int [var]
-            CONST Int type=kotlin.Int value=1
-          VAR name:s1 type:kotlin.String [val]
-            STRING_CONCATENATION type=kotlin.String
-              CONST String type=kotlin.String value="a is "
-              GET_VAR 'var a: kotlin.Int [var] declared in <root>.MainKt.main' type=kotlin.Int origin=null
-          SET_VAR 'var a: kotlin.Int [var] declared in <root>.MainKt.main' type=kotlin.Unit origin=EQ
-            CONST Int type=kotlin.Int value=2
-          VAR name:s2 type:kotlin.String [val]
-            STRING_CONCATENATION type=kotlin.String
-              CALL 'public final fun replace (oldValue: kotlin.String, newValue: kotlin.String, ignoreCase: kotlin.Boolean): kotlin.String declared in kotlin.text.TextH' type=kotlin.String origin=null
-                $this: GET_VAR 'val s1: kotlin.String [val] declared in <root>.MainKt.main' type=kotlin.String origin=null
-                $receiver: GET_VAR 'val s1: kotlin.String [val] declared in <root>.MainKt.main' type=kotlin.String origin=null
-                oldValue: CONST String type=kotlin.String value="is"
-                newValue: CONST String type=kotlin.String value="was"
-              CONST String type=kotlin.String value=", but now is "
-              GET_VAR 'var a: kotlin.Int [var] declared in <root>.MainKt.main' type=kotlin.Int origin=null
-      FUN GENERATED_EXTENDED_MAIN name:Main visibility:public modality:OPEN <> (args:kotlin.Array<kotlin.String>) returnType:kotlin.Unit
-        VALUE_PARAMETER name:args index:0 type:kotlin.Array<kotlin.String>
+          VAR name:a type:kotlin.String? [val]
+            CONST Null type=kotlin.Nothing? value=null
+          TYPE_OP type=kotlin.Unit origin=IMPLICIT_COERCION_TO_UNIT typeOperand=kotlin.Unit
+            CALL 'public final fun println (message: kotlin.Any?): kotlin.Unit? declared in kotlin.io.ConsoleKt' type=kotlin.Unit? origin=null
+              ARG message: GET_VAR 'val a: kotlin.String? [val] declared in <root>.MainKt.main' type=kotlin.String? origin=null
+      FUN GENERATED_EXTENDED_MAIN name:Main visibility:public modality:OPEN returnType:kotlin.Unit
+        VALUE_PARAMETER kind:Regular name:args index:0 type:kotlin.Array<kotlin.String>
         BLOCK_BODY
           CALL 'public final fun main (): kotlin.Unit declared in <root>.MainKt' type=kotlin.Unit origin=null
 

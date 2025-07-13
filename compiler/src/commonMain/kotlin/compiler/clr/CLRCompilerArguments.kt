@@ -16,11 +16,7 @@
 
 package compiler.clr
 
-import org.jetbrains.kotlin.cli.common.arguments.Argument
-import org.jetbrains.kotlin.cli.common.arguments.CommonCompilerArguments
-import org.jetbrains.kotlin.cli.common.arguments.DefaultValue
-import org.jetbrains.kotlin.cli.common.arguments.GradleInputTypes
-import org.jetbrains.kotlin.cli.common.arguments.GradleOption
+import org.jetbrains.kotlin.cli.common.arguments.*
 
 class CLRCompilerArguments : CommonCompilerArguments() {
 	@Argument(
@@ -89,4 +85,6 @@ class CLRCompilerArguments : CommonCompilerArguments() {
 			checkFrozen()
 			field = value
 		}
+
+	override val configurator = CLRCompilerArgumentsConfigurator()
 }

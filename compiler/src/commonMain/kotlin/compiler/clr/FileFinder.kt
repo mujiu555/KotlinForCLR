@@ -25,14 +25,16 @@ import org.jetbrains.kotlin.com.intellij.psi.search.GlobalSearchScope
 import org.jetbrains.kotlin.load.kotlin.VirtualFileFinder
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.util.PerformanceManager
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.concurrent.ConcurrentHashMap
 
 class ClrAssemblyFileFinder(
 	private val assemblies: Map<String, NodeAssembly>,
-	private val scope: GlobalSearchScope
-) : VirtualFileFinder() {
+	private val scope: GlobalSearchScope,
+	perfManager: PerformanceManager?,
+) : VirtualFileFinder(perfManager) {
 	// 创建NodeAssembly到虚拟文件的映射
 	private val virtualFileCache = ConcurrentHashMap<ClassId, VirtualFile>()
 

@@ -252,10 +252,11 @@ class KotlinCoreEnvironment private constructor(
 			rootsIndex,
 			packagePartProviders,
 			SingleJavaFileRootsIndex(singleJavaFileRoots),
-			configuration.getBoolean(JVMConfigurationKeys.USE_PSI_CLASS_FILES_READING)
+			configuration.getBoolean(JVMConfigurationKeys.USE_PSI_CLASS_FILES_READING),
+			null
 		)
 
-		val fileFinderFactory = CliVirtualFileFinderFactory(rootsIndex, releaseTarget != null)
+		val fileFinderFactory = CliVirtualFileFinderFactory(rootsIndex, releaseTarget != null, null)
 		project.registerService(VirtualFileFinderFactory::class.java, fileFinderFactory)
 		project.registerService(MetadataFinderFactory::class.java, CliMetadataFinderFactory(fileFinderFactory))
 

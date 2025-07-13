@@ -20,6 +20,7 @@ import compiler.clr.frontend.symbol.ClrCompilerBuiltinSymbolProvider
 import compiler.clr.frontend.symbol.ClrBuiltinsSymbolProvider
 import compiler.clr.frontend.symbol.ClrSymbolProvider
 import org.jetbrains.kotlin.config.AnalysisFlags
+import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.LanguageVersionSettings
 import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.checkers.registerCommonCheckers
@@ -43,9 +44,6 @@ import org.jetbrains.kotlin.fir.session.FirSessionConfigurator
 import org.jetbrains.kotlin.fir.session.environment.AbstractProjectEnvironment
 import org.jetbrains.kotlin.fir.session.environment.AbstractProjectFileSearchScope
 import org.jetbrains.kotlin.fir.session.registerDefaultComponents
-import org.jetbrains.kotlin.incremental.components.EnumWhenTracker
-import org.jetbrains.kotlin.incremental.components.ImportTracker
-import org.jetbrains.kotlin.incremental.components.LookupTracker
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.utils.addToStdlib.runIf
 import org.jetbrains.kotlin.utils.addToStdlib.runUnless
@@ -54,9 +52,39 @@ import org.jetbrains.kotlin.utils.addToStdlib.runUnless
 object FirClrSessionFactory :
 	FirAbstractSessionFactory<FirClrSessionFactory.LibraryContext, FirClrSessionFactory.SourceContext>() {
 
-	fun createLibrarySession(
+	fun createSharedLibrarySession(
 		mainModuleName: Name,
 		sessionProvider: FirProjectSessionProvider,
+		projectEnvironment: AbstractProjectEnvironment,
+		extensionRegistrars: List<FirExtensionRegistrar>,
+		scope: AbstractProjectFileSearchScope,
+		languageVersionSettings: LanguageVersionSettings,
+		assemblies: Map<String, NodeAssembly>,
+	) = createSharedLibrarySession(
+		mainModuleName,
+		LibraryContext(assemblies, projectEnvironment),
+		sessionProvider,
+		languageVersionSettings,
+		extensionRegistrars
+	) { session, moduleData, scopeProvider, extensionSyntheticFunctionInterfaceProvider ->
+		listOfNotNull(
+			extensionSyntheticFunctionInterfaceProvider,
+			runUnless(languageVersionSettings.getFlag(AnalysisFlags.stdlibCompilation)) {
+				initializeBuiltinsProvider(
+					session,
+					moduleData,
+					scopeProvider,
+					assemblies.filter { it.key == "kotlin-stdlib" },
+				)
+			},
+			FirBuiltinSyntheticFunctionInterfaceProvider(session, moduleData, scopeProvider),
+			FirCloneableSymbolProvider(session, moduleData, scopeProvider),
+		)
+	}
+
+	fun createLibrarySession(
+		sessionProvider: FirProjectSessionProvider,
+		sharedLibrarySession: FirSession,
 		moduleDataProvider: ModuleDataProvider,
 		projectEnvironment: AbstractProjectEnvironment,
 		extensionRegistrars: List<FirExtensionRegistrar>,
@@ -64,30 +92,19 @@ object FirClrSessionFactory :
 		languageVersionSettings: LanguageVersionSettings,
 		assemblies: Map<String, NodeAssembly>,
 	) = createLibrarySession(
-		mainModuleName,
 		LibraryContext(assemblies, projectEnvironment),
+		sharedLibrarySession,
 		sessionProvider,
 		moduleDataProvider,
 		languageVersionSettings,
 		extensionRegistrars,
-		createProviders = { session, builtinsModuleData, kotlinScopeProvider, syntheticFunctionInterfaceProvider ->
-			listOfNotNull(
+		createProviders = { session, kotlinScopeProvider ->
+			listOf(
 				ClrSymbolProvider(
 					session,
 					assemblies.filterNot { it.key == "kotlin-stdlib" },
 					moduleDataProvider.allModuleData.last()
 				),
-				runUnless(languageVersionSettings.getFlag(AnalysisFlags.stdlibCompilation)) {
-					initializeBuiltinsProvider(
-						session,
-						builtinsModuleData,
-						kotlinScopeProvider,
-						assemblies.filter { it.key == "kotlin-stdlib" },
-					)
-				},
-				FirBuiltinSyntheticFunctionInterfaceProvider(session, builtinsModuleData, kotlinScopeProvider),
-				syntheticFunctionInterfaceProvider,
-				FirCloneableSymbolProvider(session, builtinsModuleData, kotlinScopeProvider),
 			)
 		},
 	)
@@ -106,32 +123,27 @@ object FirClrSessionFactory :
 		sessionProvider: FirProjectSessionProvider,
 		projectEnvironment: AbstractProjectEnvironment,
 		extensionRegistrars: List<FirExtensionRegistrar>,
-		languageVersionSettings: LanguageVersionSettings,
-		lookupTracker: LookupTracker?,
-		enumWhenTracker: EnumWhenTracker?,
-		importTracker: ImportTracker?,
+		configuration: CompilerConfiguration,
 		assemblies: Map<String, NodeAssembly>,
 		init: FirSessionConfigurator.() -> Unit,
 	): FirSession {
 		val context = SourceContext(assemblies, projectEnvironment)
-		return createModuleBasedSession(
+		return createSourceSession(
 			moduleData,
 			context = context,
 			sessionProvider,
 			extensionRegistrars,
-			languageVersionSettings,
-			lookupTracker,
-			enumWhenTracker,
-			importTracker,
+			configuration,
 			init,
-			createProviders = { session, kotlinScopeProvider, symbolProvider, generatedSymbolsProvider, dependencies ->
-				listOfNotNull(
+			createProviders = { session, kotlinScopeProvider, symbolProvider, generatedSymbolsProvider ->
+				val providers = listOfNotNull(
 					symbolProvider,
 					generatedSymbolsProvider,
 					ClrSymbolProvider(session, assemblies, session.moduleData),
 					initializeForStdlibIfNeeded(projectEnvironment, session, kotlinScopeProvider, assemblies),
-					*dependencies.toTypedArray(),
 				)
+
+				SourceProviders(providers, null)
 			}
 		)
 	}
@@ -157,6 +169,9 @@ object FirClrSessionFactory :
 
 	override fun FirSessionConfigurator.registerPlatformCheckers(c: SourceContext) {
 		registerCommonCheckers() // CLR特定的检查器可以添加在这里
+	}
+
+	override fun FirSessionConfigurator.registerExtraPlatformCheckers(c: SourceContext) {
 	}
 
 	override fun FirSession.registerSourceSessionComponents(c: SourceContext) {

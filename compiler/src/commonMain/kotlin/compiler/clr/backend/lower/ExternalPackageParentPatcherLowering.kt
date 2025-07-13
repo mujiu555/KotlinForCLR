@@ -17,19 +17,23 @@
 package compiler.clr.backend.lower
 
 import compiler.clr.backend.ClrBackendContext
+import compiler.clr.frontend.FacadeClassSource
 import org.jetbrains.kotlin.backend.common.FileLoweringPass
 import org.jetbrains.kotlin.backend.common.phaser.PhaseDescription
-import org.jetbrains.kotlin.backend.jvm.classNameOverride
-import org.jetbrains.kotlin.backend.jvm.createJvmFileFacadeClass
+import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.ir.IrElement
+import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.declarations.*
+import org.jetbrains.kotlin.ir.declarations.impl.IrFactoryImpl
 import org.jetbrains.kotlin.ir.expressions.IrMemberAccessExpression
 import org.jetbrains.kotlin.ir.symbols.UnsafeDuringIrConstructionAPI
+import org.jetbrains.kotlin.ir.symbols.impl.IrClassSymbolImpl
 import org.jetbrains.kotlin.ir.util.createThisReceiverParameter
 import org.jetbrains.kotlin.ir.visitors.IrVisitorVoid
 import org.jetbrains.kotlin.ir.visitors.acceptChildrenVoid
 import org.jetbrains.kotlin.ir.visitors.acceptVoid
-import org.jetbrains.kotlin.load.kotlin.FacadeClassSource
 
 @PhaseDescription(name = "ExternalPackageParentPatcherLowering")
 internal class ExternalPackageParentPatcherLowering(val context: ClrBackendContext) : FileLoweringPass {
@@ -65,23 +69,20 @@ internal class ExternalPackageParentPatcherLowering(val context: ClrBackendConte
 		private fun generateOrGetFacadeClass(declaration: IrMemberWithContainerSource): IrClass? {
 			val deserializedSource = declaration.containerSource ?: return null
 			if (deserializedSource !is FacadeClassSource) return null
-			val facadeName = deserializedSource.facadeClassName ?: deserializedSource.className
-			return createJvmFileFacadeClass(
-				if (deserializedSource.facadeClassName != null) IrDeclarationOrigin.JVM_MULTIFILE_CLASS else IrDeclarationOrigin.FILE_CLASS,
-				facadeName.fqNameForTopLevelClassMaybeWithDollars.shortName(),
-				deserializedSource,
-				deserializeIr = { irClass -> deserializeTopLevelClass(irClass) }
+			val facadeClassId = deserializedSource.facadeClassId
+			return IrFactoryImpl.createClass(
+				UNDEFINED_OFFSET,
+				UNDEFINED_OFFSET,
+				IrDeclarationOrigin.FILE_CLASS,
+				facadeClassId.shortClassName,
+				DescriptorVisibilities.PUBLIC,
+				IrClassSymbolImpl(),
+				ClassKind.CLASS,
+				Modality.FINAL,
+				source = deserializedSource
 			).also {
 				it.createThisReceiverParameter()
-				it.classNameOverride = facadeName
 			}
-		}
-
-		private fun deserializeTopLevelClass(irClass: IrClass): Boolean {
-			/*return context.irDeserializer.deserializeTopLevelClass(
-				irClass, context.irBuiltIns, context.symbolTable, context.irProviders, context.generatorExtensions
-			)*/
-			TODO()
 		}
 
 		private fun handleProperty(property: IrProperty, newParent: IrClass) {

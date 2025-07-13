@@ -17,6 +17,7 @@
 package compiler.clr.pipeline
 
 import compiler.clr.*
+import compiler.clr.backend.clrPhases
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -59,6 +60,10 @@ private object Updater : ConfigurationUpdater<CLRCompilerArguments>() {
 		File(arguments.destination!!).run {
 			delete()
 			mkdirs()
+		}
+
+		configuration.phaseConfig = createPhaseConfig(arguments, clrPhases).also {
+			if (arguments.listPhases) it.list(clrPhases)
 		}
 
 		if (!configuration.configureDotnet(arguments)) return

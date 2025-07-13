@@ -17,10 +17,7 @@
 package compiler.clr.pipeline
 
 import compiler.EnvironmentConfigFiles
-import compiler.clr.CLRConfigurationKeys
-import compiler.clr.ClrAssemblyFileFinderFactory
-import compiler.clr.ClrMetadataFinderFactory
-import compiler.clr.clrDllRoots
+import compiler.clr.*
 import compiler.clr.frontend.*
 import compiler.clr.frontend.KotlinCoreEnvironment.Companion.configureProjectEnvironment
 import kotlinx.coroutines.*
@@ -37,10 +34,7 @@ import org.jetbrains.kotlin.cli.jvm.compiler.setupIdeaStandaloneExecution
 import org.jetbrains.kotlin.cli.jvm.index.JavaRoot
 import org.jetbrains.kotlin.cli.jvm.index.JvmDependenciesDynamicCompoundIndex
 import org.jetbrains.kotlin.cli.jvm.index.JvmDependenciesIndexImpl
-import org.jetbrains.kotlin.cli.pipeline.CheckCompilationErrors
-import org.jetbrains.kotlin.cli.pipeline.ConfigurationPipelineArtifact
-import org.jetbrains.kotlin.cli.pipeline.PerformanceNotifications
-import org.jetbrains.kotlin.cli.pipeline.PipelinePhase
+import org.jetbrains.kotlin.cli.pipeline.*
 import org.jetbrains.kotlin.com.intellij.openapi.Disposable
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.com.intellij.openapi.vfs.StandardFileSystems
@@ -49,9 +43,9 @@ import org.jetbrains.kotlin.com.intellij.openapi.vfs.VirtualFileSystem
 import org.jetbrains.kotlin.com.intellij.psi.PsiManager
 import org.jetbrains.kotlin.com.intellij.psi.search.GlobalSearchScope
 import org.jetbrains.kotlin.config.*
-import org.jetbrains.kotlin.fir.BinaryModuleData
 import org.jetbrains.kotlin.fir.DependencyListForCliModule
 import org.jetbrains.kotlin.fir.declarations.builder.buildImport
+import org.jetbrains.kotlin.fir.extensions.FirAnalysisHandlerExtension
 import org.jetbrains.kotlin.fir.extensions.FirExtensionRegistrar
 import org.jetbrains.kotlin.fir.pipeline.FirResult
 import org.jetbrains.kotlin.fir.pipeline.buildFirViaLightTree
@@ -63,6 +57,7 @@ import org.jetbrains.kotlin.load.kotlin.PackagePartProvider
 import org.jetbrains.kotlin.load.kotlin.VirtualFileFinderFactory
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.util.PhaseType
 import java.io.File
 
 object Frontend : PipelinePhase<ConfigurationPipelineArtifact, ClrFrontendPipelineArtifact>(
@@ -75,6 +70,8 @@ object Frontend : PipelinePhase<ConfigurationPipelineArtifact, ClrFrontendPipeli
 
 		val perfManager = configuration.perfManager
 		val chunk = configuration.moduleChunk!!
+		val targetDescription = chunk.targetDescription()
+		perfManager?.targetDescription = targetDescription
 
 		val assemblies = processAssemblies(configuration)
 
@@ -82,9 +79,28 @@ object Frontend : PipelinePhase<ConfigurationPipelineArtifact, ClrFrontendPipeli
 			configuration,
 			rootDisposable,
 			assemblies
-		) ?: return null
+		) ?: run {
+			perfManager?.notifyPhaseFinished(PhaseType.Initialization)
+			return null
+		}
+
+		FirAnalysisHandlerExtension.analyze(environment.project, configuration)?.let {
+			/*
+			 * If the analysis handler exception finishes successfully, we should stop the pipeline (as it doesn't produce the proper
+			 * fronted artifact), but we don't need to return the [ExitCode.COMPILATION_ERROR] (because the "compilation" finished
+			 * successfully). Ideally, it should be implemented in a way, when analysis handler extensions are run in the dedicated
+			 * pipeline (TODO: KT-73576), so this is a temporary solution.
+			 */
+			when (it) {
+				true -> throw SuccessfulPipelineExecutionException()
+				false -> throw PipelineStepException(definitelyCompilationError = true)
+			}
+		}
+
 		val sources = sourcesProvider()
 		val allSources = sources.allFiles
+
+		perfManager?.notifyPhaseFinished(PhaseType.Initialization)
 
 		if (
 			allSources.isEmpty() &&
@@ -95,6 +111,8 @@ object Frontend : PipelinePhase<ConfigurationPipelineArtifact, ClrFrontendPipeli
 			}
 			return null
 		}
+
+		perfManager?.notifyPhaseStarted(PhaseType.Analysis)
 
 		val moduleName = when {
 			chunk.modules.size > 1 -> chunk.modules.joinToString(separator = "+") { it.getModuleName() }
@@ -215,11 +233,7 @@ object Frontend : PipelinePhase<ConfigurationPipelineArtifact, ClrFrontendPipeli
 		moduleName: String,
 		configuration: CompilerConfiguration,
 	): DependencyListForCliModule {
-		val binaryModuleData = BinaryModuleData.initialize(
-			Name.identifier(moduleName),
-			ClrPlatforms.unspecifiedClrPlatform
-		)
-		val libraryList = DependencyListForCliModule.build(binaryModuleData) {
+		val libraryList = DependencyListForCliModule.build(Name.identifier(moduleName)) {
 			dependencies(configuration.clrDllRoots.map { it.absolutePath })
 		}
 		return libraryList
@@ -283,8 +297,10 @@ object Frontend : PipelinePhase<ConfigurationPipelineArtifact, ClrFrontendPipeli
 			}
 		}
 
+		val perfManager = configuration.perfManager
+
 		// 注册CLR程序集和元数据查找器
-		val fileFinderFactory = ClrAssemblyFileFinderFactory(assemblies)
+		val fileFinderFactory = ClrAssemblyFileFinderFactory(assemblies, perfManager)
 		project.registerService(VirtualFileFinderFactory::class.java, fileFinderFactory)
 		project.registerService(MetadataFinderFactory::class.java, ClrMetadataFinderFactory(fileFinderFactory))
 
@@ -339,10 +355,21 @@ object Frontend : PipelinePhase<ConfigurationPipelineArtifact, ClrFrontendPipeli
 			isCommonSource = isCommonSource,
 			isScript = { false },
 			fileBelongsToModule = fileBelongsToModule,
-			createLibrarySession = { sessionProvider ->
-				FirClrSessionFactory.createLibrarySession(
+			createSharedLibrarySession = { sessionProvider ->
+				FirClrSessionFactory.createSharedLibrarySession(
 					rootModuleName,
 					sessionProvider,
+					projectEnvironment,
+					extensionRegistrars,
+					librariesScope,
+					configuration.languageVersionSettings,
+					assemblies,
+				)
+			},
+			createLibrarySession = { sessionProvider, sharedLibrarySession ->
+				FirClrSessionFactory.createLibrarySession(
+					sessionProvider,
+					sharedLibrarySession,
 					libraryList.moduleDataProvider,
 					projectEnvironment,
 					extensionRegistrars,
@@ -357,10 +384,7 @@ object Frontend : PipelinePhase<ConfigurationPipelineArtifact, ClrFrontendPipeli
 					sessionProvider,
 					projectEnvironment,
 					extensionRegistrars,
-					configuration.languageVersionSettings,
-					configuration.get(CommonConfigurationKeys.LOOKUP_TRACKER),
-					configuration.get(CommonConfigurationKeys.ENUM_WHEN_TRACKER),
-					configuration.get(CommonConfigurationKeys.IMPORT_TRACKER),
+					configuration,
 					assemblies,
 					sessionConfigurator,
 				)

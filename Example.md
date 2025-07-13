@@ -367,12 +367,12 @@ public static class MainKt
 {
     public static void main()
     {
-        global::System.Collections.Generic.IReadOnlyList<global::System.String?> items = global::kotlin.collections.CollectionsKt.listOf<[global::kotlin.clr.KotlinNotNull] global::System.String>("apple", "banana", "kiwifruit");
+        global::System.Collections.Generic.IReadOnlyList<global::System.String> items = global::kotlin.collections.CollectionsKt.listOf<global::System.String>("apple", "banana", "kiwifruit");
         {
-            global::kotlin.collections.KotlinIterator<global::System.String?> iterator = new global::kotlin.collections.KotlinIterator<global::System.String?>(items.GetEnumerator());
+            global::kotlin.collections.KotlinIterator<global::System.String> iterator = new global::kotlin.collections.KotlinIterator<global::System.String>(items.GetEnumerator());
             while (iterator.hasNext())
             {
-                global::System.String? item = iterator.next();
+                global::System.String item = iterator.next();
                 {
                     global::kotlin.io.ConsoleKt.println(item);
                 };

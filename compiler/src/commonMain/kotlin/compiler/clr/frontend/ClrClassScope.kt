@@ -18,6 +18,7 @@ package compiler.clr.frontend
 
 import compiler.clr.frontend.symbol.ClrSymbolProvider
 import org.jetbrains.kotlin.fir.FirSession
+import org.jetbrains.kotlin.fir.declarations.DirectDeclarationsAccess
 import org.jetbrains.kotlin.fir.declarations.FirClass
 import org.jetbrains.kotlin.fir.declarations.FirSimpleFunction
 import org.jetbrains.kotlin.fir.resolve.ScopeSession
@@ -49,7 +50,7 @@ class ClrClassMemberScope(
         return ClrClassMemberScope(klass, newSession, newScopeSession, newDelegateScope)
     }
     
-    @OptIn(SymbolInternals::class, UnsafeCastFunction::class)
+    @OptIn(SymbolInternals::class, UnsafeCastFunction::class, DirectDeclarationsAccess::class)
     override fun processFunctionsByName(name: Name, processor: (FirNamedFunctionSymbol) -> Unit) {
         delegatedScope.processFunctionsByName(name, processor)
 

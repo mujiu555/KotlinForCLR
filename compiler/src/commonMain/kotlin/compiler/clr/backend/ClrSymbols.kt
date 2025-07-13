@@ -204,7 +204,7 @@ class ClrSymbols(
 		intrinsicsClass.functions.single { it.owner.name.asString() == "throwIllegalAccessException" }
 
 	@OptIn(UnsafeDuringIrConstructionAPI::class)
-	val throwUnsupportedOperationException: IrSimpleFunctionSymbol =
+	override val throwUnsupportedOperationException: IrSimpleFunctionSymbol =
 		intrinsicsClass.functions.single { it.owner.name.asString() == "throwUnsupportedOperationException" }
 
 	@OptIn(UnsafeDuringIrConstructionAPI::class)
