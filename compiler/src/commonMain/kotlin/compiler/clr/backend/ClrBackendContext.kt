@@ -16,7 +16,6 @@
 
 package compiler.clr.backend
 
-import compiler.clr.backend.mapping.IrTypeMapper
 import org.jetbrains.kotlin.backend.common.CommonBackendContext
 import org.jetbrains.kotlin.backend.common.ir.SharedVariablesManager
 import org.jetbrains.kotlin.backend.common.lower.InnerClassesSupport
@@ -48,7 +47,6 @@ class ClrBackendContext(
 ) : CommonBackendContext {
     override val irFactory: IrFactory = IrFactoryImpl
     override val typeSystem: IrTypeSystemContext = JvmIrTypeSystemContext(irBuiltIns)
-    val defaultTypeMapper = IrTypeMapper(this)
     override val innerClassesSupport: InnerClassesSupport = JvmInnerClassesSupport(irFactory)
     override val symbols = ClrSymbols(this)
 

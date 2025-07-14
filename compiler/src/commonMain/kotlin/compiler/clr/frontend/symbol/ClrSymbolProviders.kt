@@ -28,10 +28,8 @@ import org.jetbrains.kotlin.fir.declarations.FirDeclarationOrigin
 import org.jetbrains.kotlin.fir.declarations.builder.*
 import org.jetbrains.kotlin.fir.declarations.impl.FirDeclarationStatusImpl
 import org.jetbrains.kotlin.fir.declarations.impl.FirResolvedDeclarationStatusImpl
-import org.jetbrains.kotlin.fir.expressions.UnresolvedExpressionTypeAccess
 import org.jetbrains.kotlin.fir.expressions.builder.buildAnnotation
 import org.jetbrains.kotlin.fir.expressions.impl.FirEmptyAnnotationArgumentMapping
-import org.jetbrains.kotlin.fir.resolve.defaultType
 import org.jetbrains.kotlin.fir.resolve.dfa.cfg.FirStub
 import org.jetbrains.kotlin.fir.resolve.providers.FirSymbolNamesProvider
 import org.jetbrains.kotlin.fir.resolve.providers.FirSymbolProvider
@@ -40,7 +38,6 @@ import org.jetbrains.kotlin.fir.scopes.kotlinScopeProvider
 import org.jetbrains.kotlin.fir.symbols.SymbolInternals
 import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.fir.types.ConeTypeProjection
-import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
 import org.jetbrains.kotlin.fir.types.builder.buildResolvedTypeRef
 import org.jetbrains.kotlin.fir.types.coneType
 import org.jetbrains.kotlin.fir.types.impl.ConeClassLikeTypeImpl
@@ -277,7 +274,7 @@ class ClrSymbolProvider(
 				Modality.FINAL,
 				EffectiveVisibility.Public
 			)
-			returnTypeRef = resolveFirTypeRefForClr(
+			returnTypeRef = TypeResolver.resolveType(
 				namespace = classId.packageFqName.asString(),
 				name = classId.shortClassName.asString(),
 				isReturnPosition = true,
@@ -325,7 +322,7 @@ class ClrSymbolProvider(
 					)
 				}
 
-				node.returnType.typeKind in listOf(2, 7, 10) -> resolveFirTypeRefForClr(
+				node.returnType.typeKind in listOf(2, 7, 10) -> TypeResolver.resolveType(
 					namespace = node.returnType.namespace ?: "",
 					name = node.returnType.name,
 					isReturnPosition = true,
@@ -414,7 +411,7 @@ class ClrSymbolProvider(
 					)
 				}
 
-				node.returnType.typeKind in listOf(2, 7, 10) -> resolveFirTypeRefForClr(
+				node.returnType.typeKind in listOf(2, 7, 10) -> TypeResolver.resolveType(
 					namespace = node.returnType.namespace ?: "",
 					name = node.returnType.name,
 					isReturnPosition = true,
@@ -471,7 +468,7 @@ class ClrSymbolProvider(
 			moduleData = firModuleData
 			origin = FirDeclarationOrigin.Library
 			returnTypeRef = when {
-				node.type.typeKind in listOf(2, 7, 10) -> resolveFirTypeRefForClr(
+				node.type.typeKind in listOf(2, 7, 10) -> TypeResolver.resolveType(
 					namespace = node.type.namespace ?: "",
 					name = node.type.name,
 					isReturnPosition = true,
@@ -538,67 +535,6 @@ class ClrSymbolProvider(
 
 	override fun getClassLikeSymbolByClassId(classId: ClassId): FirRegularClassSymbol? {
 		return classSymbols[classId]
-	}
-
-	@OptIn(UnresolvedExpressionTypeAccess::class)
-	private fun resolveFirTypeRefForClr(
-		namespace: String,
-		name: String,
-		isReturnPosition: Boolean,
-		nullable: Boolean,
-		typeParameters: List<FirTypeParameterSymbol>,
-	): FirResolvedTypeRef {
-		try {
-			val classId = when (namespace) {
-				"System" -> when (name) {
-					"Attribute" -> StandardClassIds.Annotation
-					"Object" -> StandardClassIds.Any
-					"Array" -> StandardClassIds.Array
-					"Void" -> StandardClassIds.Unit
-					"Boolean" -> StandardClassIds.Boolean
-					"Char" -> StandardClassIds.Char
-					"Enum" -> StandardClassIds.Enum
-					"SByte" -> StandardClassIds.Byte
-					"Int16" -> StandardClassIds.Short
-					"Int32" -> StandardClassIds.Int
-					"Int64" -> StandardClassIds.Long
-					"Single" -> StandardClassIds.Float
-					"Double" -> StandardClassIds.Double
-					"String" -> StandardClassIds.String
-					"Exception" -> StandardClassIds.Throwable
-					else -> classId(namespace, name)
-				}
-
-				"System.Collections.Generic" -> when (name) {
-					"IReadOnlyList" -> StandardClassIds.List
-					"IList" -> StandardClassIds.MutableList
-					"IReadOnlySet" -> StandardClassIds.Set
-					"ISet" -> StandardClassIds.MutableSet
-					"IReadOnlyDictionary" -> StandardClassIds.Map
-					"IDictionary" -> StandardClassIds.MutableMap
-					else -> classId(namespace, name)
-				}
-
-				else -> classId(namespace, name)
-			}
-
-			return buildResolvedTypeRef {
-				coneType = ConeClassLikeTypeImpl(
-					classId.toLookupTag(),
-					typeParameters.map { typeParameterSymbol ->
-						typeParameterSymbol.annotations
-						ConeTypeParameterTypeImpl(
-							typeParameterSymbol.toLookupTag(),
-							typeParameterSymbol.defaultType.isMarkedNullable
-						)
-					}.toTypedArray(),
-					nullable
-				)
-			}
-		} catch (e: Throwable) {
-			println("exception on $namespace $name $isReturnPosition")
-			throw e
-		}
 	}
 
 	@FirSymbolProviderInternals

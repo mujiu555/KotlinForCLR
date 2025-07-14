@@ -17,8 +17,8 @@
 package compiler.clr.backend.codegen
 
 import compiler.clr.backend.ClrBackendContext
-import compiler.clr.backend.mapping.IrTypeMapper
-import compiler.clr.backend.mapping.TypeStyle
+import compiler.clr.backend.TypeMapper
+import compiler.clr.backend.TypeStyle
 import org.jetbrains.kotlin.DeprecatedForRemovalCompilerApi
 import org.jetbrains.kotlin.descriptors.ClassKind.*
 import org.jetbrains.kotlin.descriptors.Modality
@@ -48,8 +48,6 @@ fun <T> List<T>.join(separator: T): List<T> = when {
 
 @OptIn(UnsafeDuringIrConstructionAPI::class)
 class ClassCodegen(val context: ClrBackendContext) {
-	val typeMapper = IrTypeMapper(context)
-
 	fun IrFile.visit(): CodeNode {
 		val `package` = packageFqName
 
@@ -143,7 +141,7 @@ class ClassCodegen(val context: ClrBackendContext) {
 			plainPlain("class "),
 			plainPlain(name.visit()),
 			plainPlain(" : "),
-			plainPlain(superTypes.joinToString(", ") { typeMapper.mapType(it, TypeStyle.NoModifier) }),
+			plainPlain(superTypes.joinToString(", ") { TypeMapper.mapType(it, TypeStyle.NoModifier) }),
 		),
 		blockPadding(
 			buildList {
@@ -173,7 +171,7 @@ class ClassCodegen(val context: ClrBackendContext) {
 				add(plainPlain(name.visit()))
 				if (superTypes.isNotEmpty()) {
 					add(plainPlain(" : "))
-					add(plainPlain(superTypes.joinToString(", ") { typeMapper.mapType(it, TypeStyle.NoModifier) }))
+					add(plainPlain(superTypes.joinToString(", ") { TypeMapper.mapType(it, TypeStyle.NoModifier) }))
 				}
 			}
 		),
@@ -256,7 +254,7 @@ class ClassCodegen(val context: ClrBackendContext) {
 			plainPlain("class "),
 			plainPlain(name.visit()),
 			plainPlain(" : "),
-			plainPlain(superTypes.joinToString(", ") { typeMapper.mapType(it, TypeStyle.NoModifier) }),
+			plainPlain(superTypes.joinToString(", ") { TypeMapper.mapType(it, TypeStyle.NoModifier) }),
 		),
 		blockPadding(
 			buildList {
@@ -269,9 +267,9 @@ class ClassCodegen(val context: ClrBackendContext) {
 							add(
 								singleLinePlain(
 									"public static ",
-									typeMapper.mapType(defaultType, TypeStyle.Property),
+									TypeMapper.mapType(defaultType, TypeStyle.Property),
 									" INSTANCE { get; } = new ",
-									typeMapper.mapType(defaultType, TypeStyle.NoModifier),
+									TypeMapper.mapType(defaultType, TypeStyle.NoModifier),
 									"();",
 								)
 							)
@@ -338,12 +336,12 @@ class ClassCodegen(val context: ClrBackendContext) {
 							else -> false
 						}
 
-						val returnType = typeMapper.mapType(returnType, TypeStyle.ReturnType)
+						val returnType = TypeMapper.mapType(returnType, TypeStyle.ReturnType)
 
 						val parameters = parameters.filter {
 							it.kind == IrParameterKind.Regular || it.kind == IrParameterKind.Context
 						}.map {
-							typeMapper.mapType(it.type, TypeStyle.Normal) to it.name.visit()
+							TypeMapper.mapType(it.type, TypeStyle.Normal) to it.name.visit()
 						}
 
 						add(visibility.delegate.visit())
@@ -353,7 +351,7 @@ class ClassCodegen(val context: ClrBackendContext) {
 						add(plainPlain("$returnType "))
 						add(plainPlain("${name.visit()}("))
 						this@visit.parameters.firstOrNull { it.kind == IrParameterKind.ExtensionReceiver }?.let {
-							add(plainPlain("${typeMapper.mapType(it.type, TypeStyle.Normal)} receiver, "))
+							add(plainPlain("${TypeMapper.mapType(it.type, TypeStyle.Normal)} receiver, "))
 						}
 						add(plainPlain(parameters.joinToString(", ") { "${it.first} ${it.second}" }))
 						add(plainPlain(")"))
@@ -372,7 +370,7 @@ class ClassCodegen(val context: ClrBackendContext) {
 				val parameters = parameters.filter {
 					it.kind == IrParameterKind.Regular || it.kind == IrParameterKind.Context
 				}.map {
-					typeMapper.mapType(it.type, TypeStyle.Normal) to it.name.visit()
+					TypeMapper.mapType(it.type, TypeStyle.Normal) to it.name.visit()
 				}
 
 				add(visibility.delegate.visit())
@@ -421,7 +419,7 @@ class ClassCodegen(val context: ClrBackendContext) {
 							add(plainPlain("static "))
 						}
 
-						add(plainPlain(typeMapper.mapType(type, TypeStyle.Property)))
+						add(plainPlain(TypeMapper.mapType(type, TypeStyle.Property)))
 						add(plainPlain(" "))
 
 						add(plainPlain(name.visit() + "_backingField"))
@@ -468,7 +466,7 @@ class ClassCodegen(val context: ClrBackendContext) {
 							ABSTRACT -> add(plainPlain("abstract "))
 						}
 
-						add(plainPlain(typeMapper.mapType(type, TypeStyle.ReturnType)))
+						add(plainPlain(TypeMapper.mapType(type, TypeStyle.ReturnType)))
 						add(plainPlain(" "))
 
 						add(plainPlain(name.visit()))
@@ -554,7 +552,7 @@ class ClassCodegen(val context: ClrBackendContext) {
 	)
 
 	fun IrGetObjectValue.visit() = singleLineListCode(
-		plainPlain(typeMapper.mapType(symbol.owner.defaultType, TypeStyle.NoModifier)),
+		plainPlain(TypeMapper.mapType(symbol.owner.defaultType, TypeStyle.NoModifier)),
 		plainPlain(".INSTANCE"),
 	)
 
@@ -562,7 +560,7 @@ class ClassCodegen(val context: ClrBackendContext) {
 		buildList {
 			val constructedClass = symbol.owner.parent as IrClass
 			add(plainPlain("new "))
-			add(plainPlain(typeMapper.mapType(constructedClass.defaultType, TypeStyle.NoModifier)))
+			add(plainPlain(TypeMapper.mapType(constructedClass.defaultType, TypeStyle.NoModifier)))
 			add(plainPlain("("))
 			valueArguments
 				.filterNotNull()
@@ -585,7 +583,7 @@ class ClassCodegen(val context: ClrBackendContext) {
 		return when {
 			isStatic -> singleLineListCode(
 				buildList {
-					add(plainPlain(typeMapper.mapType(parent.defaultType, TypeStyle.NoModifier)))
+					add(plainPlain(TypeMapper.mapType(parent.defaultType, TypeStyle.NoModifier)))
 					add(plainPlain("."))
 					when (function.name.isSpecial) {
 						true -> {
@@ -622,7 +620,7 @@ class ClassCodegen(val context: ClrBackendContext) {
 								add(
 									singleLineListCode(
 										typeArguments.map {
-											it?.let { typeMapper.mapType(it, TypeStyle.TypeArgument) }
+											it?.let { TypeMapper.mapType(it, TypeStyle.TypeArgument) }
 												?: "global::System.Object"
 										}.map {
 											plainPlain(it)
@@ -656,7 +654,7 @@ class ClassCodegen(val context: ClrBackendContext) {
 						"is companion static",
 						"*/",
 					)
-					add(plainPlain(typeMapper.mapType(outer.defaultType, TypeStyle.NoModifier)))
+					add(plainPlain(TypeMapper.mapType(outer.defaultType, TypeStyle.NoModifier)))
 					add(plainPlain("."))
 					when (function.name.isSpecial) {
 						true -> {
@@ -692,7 +690,7 @@ class ClassCodegen(val context: ClrBackendContext) {
 								add(
 									singleLineListCode(
 										typeArguments.map {
-											it?.let { typeMapper.mapType(it, TypeStyle.TypeArgument) }
+											it?.let { TypeMapper.mapType(it, TypeStyle.TypeArgument) }
 												?: "global::System.Object"
 										}.map {
 											plainPlain(it)
@@ -743,7 +741,7 @@ class ClassCodegen(val context: ClrBackendContext) {
 						plainPlain("new global::kotlin.collections.KotlinIterator<"),
 						dispatchReceiver!!.type.let {
 							it as IrSimpleType
-							plainPlain(typeMapper.mapType(it.arguments.single().typeOrFail, TypeStyle.TypeArgument))
+							plainPlain(TypeMapper.mapType(it.arguments.single().typeOrFail, TypeStyle.TypeArgument))
 						},
 						plainPlain(">("),
 						singleLineListCode(
@@ -853,7 +851,7 @@ class ClassCodegen(val context: ClrBackendContext) {
 									add(
 										singleLineListCode(
 											typeArguments.map {
-												it?.let { typeMapper.mapType(it, TypeStyle.TypeArgument) }
+												it?.let { TypeMapper.mapType(it, TypeStyle.TypeArgument) }
 													?: "global::System.Object"
 											}.map {
 												plainPlain(it)
@@ -945,7 +943,7 @@ class ClassCodegen(val context: ClrBackendContext) {
 
 	fun IrVariable.visit(): CodeNode = singleLineCode(
 		buildList {
-			add(plainPlain(typeMapper.mapType(type, TypeStyle.ReturnType)))
+			add(plainPlain(TypeMapper.mapType(type, TypeStyle.ReturnType)))
 			add(plainPlain(" "))
 			add(plainPlain(name.visit()))
 			initializer?.let {
@@ -963,7 +961,7 @@ class ClassCodegen(val context: ClrBackendContext) {
 
 	fun IrWhen.visit() = branches.visit()
 
-	fun IrWhen.visitUsing() = branches.visitUsing(typeMapper.mapType(type, TypeStyle.ReturnType))
+	fun IrWhen.visitUsing() = branches.visitUsing(TypeMapper.mapType(type, TypeStyle.ReturnType))
 
 	fun List<IrBranch>.visit(): CodeNode {
 		val car = first()

@@ -14,9 +14,8 @@
    limitations under the License.
  */
 
-package compiler.clr.backend.mapping
+package compiler.clr.backend
 
-import compiler.clr.backend.ClrBackendContext
 import org.jetbrains.kotlin.ir.symbols.UnsafeDuringIrConstructionAPI
 import org.jetbrains.kotlin.ir.types.*
 import org.jetbrains.kotlin.ir.util.fqNameWhenAvailable
@@ -32,15 +31,7 @@ enum class TypeStyle {
 	Normal
 }
 
-/**
- * CLR平台的IR类型映射器
- *
- * 负责将Kotlin IR类型映射到CLR平台类型
- */
-class IrTypeMapper(val context: ClrBackendContext) {
-	/**
-	 * 映射IR类型到CLR类型字符串
-	 */
+object TypeMapper {
 	@OptIn(UnsafeDuringIrConstructionAPI::class)
 	fun mapType(type: IrType, typeStyle: TypeStyle): String {
 		if (typeStyle == TypeStyle.ReturnType) {
