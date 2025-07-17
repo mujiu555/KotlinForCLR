@@ -93,10 +93,10 @@ fun regularClass(
 	typeParameters: context(FirRegularClassBuilder, TypeParametersBuilder) () -> Unit = {},
 	status: FirDeclarationStatus = status(),
 	deprecationsProvider: DeprecationsProvider = UnresolvedDeprecationProvider,
-	classKind: ClassKind,
+	classKind: ClassKind = ClassKind.CLASS,
 	declarations: context(FirRegularClassBuilder, DeclarationsBuilder) () -> Unit = {},
 	annotations: List<FirAnnotation> = emptyList(),
-	name: Name,
+	name: Name = classId.shortClassName,
 	symbol: FirRegularClassSymbol = FirRegularClassSymbol(classId),
 	companionObjectSymbol: FirRegularClassSymbol? = null,
 	superTypeRefs: context(FirRegularClassBuilder, SuperTypeRefsBuilder) () -> Unit = {
@@ -127,7 +127,7 @@ fun regularClass(
 	block()
 }
 
-context(context: FirBuilderContext)
+context(context: FirBuilderContext, builder: FirSimpleFunctionBuilder)
 fun valueParameter(
 	name: Name,
 	source: KtSourceElement? = null,
@@ -138,12 +138,12 @@ fun valueParameter(
 	annotations: List<FirAnnotation> = emptyList(),
 	symbol: FirValueParameterSymbol = FirValueParameterSymbol(name),
 	defaultValue: FirExpression? = null,
-	containingDeclarationSymbol: FirBasedSymbol<*>,
+	containingDeclarationSymbol: FirBasedSymbol<*> = builder.symbol,
 	isCrossinline: Boolean = false,
 	isNoinline: Boolean = false,
 	isVararg: Boolean = false,
 	valueParameterKind: FirValueParameterKind = FirValueParameterKind.Regular,
-	block: FirValueParameterBuilder.(FirValueParameterSymbol) -> Unit = {},
+	block: FirValueParameterBuilder.() -> Unit = {},
 ) = buildValueParameter {
 	this.symbol = symbol
 	this.source = source
@@ -161,7 +161,7 @@ fun valueParameter(
 	this.isNoinline = isNoinline
 	this.isVararg = isVararg
 	this.valueParameterKind = valueParameterKind
-	block(symbol)
+	block()
 }
 
 context(context: FirBuilderContext, builder: FirRegularClassBuilder)
@@ -170,7 +170,7 @@ fun constructor(
 	source: KtSourceElement? = null,
 	resolvePhase: FirResolvePhase = FirResolvePhase.RAW_FIR,
 	attributes: FirDeclarationAttributes = FirDeclarationAttributes(),
-	typeParameters: context(TypeParametersBuilder) (FirConstructorSymbol) -> Unit = {},
+	typeParameters: context(FirConstructorBuilder, TypeParametersBuilder) () -> Unit = {},
 	status: FirDeclarationStatus = status(),
 	returnTypeRef: FirTypeRef = resolvedTypeRef(
 		coneType = coneClassLikeType(classId)
@@ -186,7 +186,7 @@ fun constructor(
 	symbol: FirConstructorSymbol = FirConstructorSymbol(classId),
 	delegatedConstructor: FirDelegatedConstructorCall? = null,
 	body: FirBlock? = null,
-	block: FirConstructorBuilder.(FirConstructorSymbol) -> Unit = {},
+	block: FirConstructorBuilder.() -> Unit = {},
 ) = buildConstructor {
 	this.symbol = symbol
 	this.source = source
@@ -194,7 +194,7 @@ fun constructor(
 	this.moduleData = context.moduleData
 	this.origin = context.origin
 	this.attributes = attributes
-	this.typeParameters += TypeParametersBuilder().apply { typeParameters(symbol) }.list.toList()
+	this.typeParameters += TypeParametersBuilder().apply { typeParameters() }.list.toList()
 	this.status = status
 	this.returnTypeRef = returnTypeRef
 	this.receiverParameter = receiverParameter
@@ -207,7 +207,7 @@ fun constructor(
 	this.annotations += annotations
 	this.delegatedConstructor = delegatedConstructor
 	this.body = body
-	block(symbol)
+	block()
 }
 
 context(context: FirBuilderContext, builder: FirRegularClassBuilder)
@@ -216,7 +216,7 @@ fun primaryConstructor(
 	source: KtSourceElement? = null,
 	resolvePhase: FirResolvePhase = FirResolvePhase.RAW_FIR,
 	attributes: FirDeclarationAttributes = FirDeclarationAttributes(),
-	typeParameters: context(TypeParametersBuilder) (FirConstructorSymbol) -> Unit = {},
+	typeParameters: context(FirPrimaryConstructorBuilder, TypeParametersBuilder) () -> Unit = {},
 	status: FirDeclarationStatus = status(),
 	returnTypeRef: FirTypeRef = resolvedTypeRef(
 		coneType = coneClassLikeType(classId)
@@ -232,7 +232,7 @@ fun primaryConstructor(
 	symbol: FirConstructorSymbol = FirConstructorSymbol(classId),
 	delegatedConstructor: FirDelegatedConstructorCall? = null,
 	body: FirBlock? = null,
-	block: FirPrimaryConstructorBuilder.(FirConstructorSymbol) -> Unit = {},
+	block: FirPrimaryConstructorBuilder.() -> Unit = {},
 ) = buildPrimaryConstructor {
 	this.symbol = symbol
 	this.source = source
@@ -240,7 +240,7 @@ fun primaryConstructor(
 	this.moduleData = context.moduleData
 	this.origin = context.origin
 	this.attributes = attributes
-	this.typeParameters += TypeParametersBuilder().apply { typeParameters(symbol) }.list.toList()
+	this.typeParameters += TypeParametersBuilder().apply { typeParameters() }.list.toList()
 	this.status = status
 	this.returnTypeRef = returnTypeRef
 	this.receiverParameter = receiverParameter
@@ -253,7 +253,7 @@ fun primaryConstructor(
 	this.annotations += annotations
 	this.delegatedConstructor = delegatedConstructor
 	this.body = body
-	block(symbol)
+	block()
 }
 
 context(context: FirBuilderContext, builder: FirRegularClassBuilder)
@@ -270,13 +270,13 @@ fun simpleFunction(
 	containerSource: DeserializedContainerSource? = null,
 	dispatchReceiverType: ConeSimpleKotlinType? = null,
 	contextParameters: List<FirValueParameter> = emptyList(),
-	valueParameters: context(ValueParametersBuilder) (FirNamedFunctionSymbol) -> Unit = {},
+	valueParameters: context(FirSimpleFunctionBuilder, ValueParametersBuilder) () -> Unit = {},
 	body: FirBlock? = null,
 	contractDescription: FirContractDescription? = null,
 	symbol: FirNamedFunctionSymbol = FirNamedFunctionSymbol(callableId),
 	annotations: List<FirAnnotation> = emptyList(),
-	typeParameters: context(TypeParametersBuilder) (FirNamedFunctionSymbol) -> Unit = {},
-	block: FirSimpleFunctionBuilder.(FirNamedFunctionSymbol) -> Unit = {},
+	typeParameters: context(FirSimpleFunctionBuilder, TypeParametersBuilder) () -> Unit = {},
+	block: FirSimpleFunctionBuilder.() -> Unit = {},
 ) = buildSimpleFunction {
 	this.symbol = symbol
 	this.source = source
@@ -291,13 +291,13 @@ fun simpleFunction(
 	this.containerSource = containerSource
 	this.dispatchReceiverType = dispatchReceiverType
 	this.contextParameters += contextParameters
-	this.valueParameters += ValueParametersBuilder().apply { valueParameters(symbol) }.list.toList()
+	this.valueParameters += ValueParametersBuilder().apply { valueParameters() }.list.toList()
 	this.body = body
 	this.contractDescription = contractDescription
 	this.name = name
 	this.annotations += annotations
-	this.typeParameters += TypeParametersBuilder().apply { typeParameters(symbol) }.list.toList()
-	block(symbol)
+	this.typeParameters += TypeParametersBuilder().apply { typeParameters() }.list.toList()
+	block()
 }
 
 context(context: FirBuilderContext)
@@ -324,8 +324,8 @@ fun property(
 	delegateFieldSymbol: FirDelegateFieldSymbol? = null,
 	isLocal: Boolean = false,
 	bodyResolveState: FirPropertyBodyResolveState = FirPropertyBodyResolveState.NOTHING_RESOLVED,
-	typeParameters: context(TypeParametersBuilder) (FirPropertySymbol) -> Unit = {},
-	block: FirPropertyBuilder.(FirPropertySymbol) -> Unit = {},
+	typeParameters: context(FirPropertyBuilder, TypeParametersBuilder) () -> Unit = {},
+	block: FirPropertyBuilder.() -> Unit = {},
 ) = buildProperty {
 	this.symbol = symbol
 	this.source = source
@@ -351,8 +351,8 @@ fun property(
 	this.delegateFieldSymbol = delegateFieldSymbol
 	this.isLocal = isLocal
 	this.bodyResolveState = bodyResolveState
-	this.typeParameters += TypeParametersBuilder().apply { typeParameters(symbol) }.list.toList()
-	block(symbol)
+	this.typeParameters += TypeParametersBuilder().apply { typeParameters() }.list.toList()
+	block()
 }
 
 context(context: FirBuilderContext)
@@ -374,7 +374,7 @@ fun typeParameter(
 		)
 	),
 	annotations: List<FirAnnotation> = emptyList(),
-	block: FirTypeParameterBuilder.(FirTypeParameterSymbol) -> Unit = {},
+	block: FirTypeParameterBuilder.() -> Unit = {},
 ) = buildTypeParameter {
 	this.symbol = symbol
 	this.source = source
@@ -388,7 +388,30 @@ fun typeParameter(
 	this.isReified = isReified
 	this.bounds += bounds
 	this.annotations += annotations
-	block(symbol)
+	block()
+}
+
+context(context: FirBuilderContext)
+fun receiverParameter(
+	source: KtSourceElement? = null,
+	resolvePhase: FirResolvePhase = FirResolvePhase.RAW_FIR,
+	attributes: FirDeclarationAttributes = FirDeclarationAttributes(),
+	symbol: FirReceiverParameterSymbol = FirReceiverParameterSymbol(),
+	typeRef: FirTypeRef,
+	containingDeclarationSymbol: FirBasedSymbol<*>,
+	annotations: List<FirAnnotation> = emptyList(),
+	block: FirReceiverParameterBuilder.() -> Unit = {}
+) = buildReceiverParameter {
+	this.symbol = symbol
+	this.source = source
+	this.resolvePhase = resolvePhase
+	this.moduleData = context.moduleData
+	this.origin = context.origin
+	this.attributes = attributes
+	this.typeRef = typeRef
+	this.containingDeclarationSymbol = containingDeclarationSymbol
+	this.annotations += annotations
+	block()
 }
 
 context(context: FirBuilderContext)

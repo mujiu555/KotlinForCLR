@@ -144,7 +144,7 @@ class ClrCompilerBuiltinSymbolProvider(
 						coneType = coneClassLikeType(StandardClassIds.Boolean)
 					),
 					dispatchReceiverType = coneClassLikeType(classId),
-					valueParameters = { functionSymbol ->
+					valueParameters = {
 						+valueParameter(
 							name = Name.identifier("other"),
 							returnTypeRef = resolvedTypeRef(
@@ -152,8 +152,7 @@ class ClrCompilerBuiltinSymbolProvider(
 									classId = StandardClassIds.Any,
 									isMarkedNullable = true
 								)
-							),
-							containingDeclarationSymbol = functionSymbol
+							)
 						)
 					}
 				).apply {
@@ -337,13 +336,12 @@ class ClrCompilerBuiltinSymbolProvider(
 						coneType = coneClassLikeType(classId)
 					),
 					dispatchReceiverType = coneClassLikeType(classId),
-					valueParameters = { functionSymbol ->
+					valueParameters = {
 						+valueParameter(
 							name = Name.identifier("other"),
 							returnTypeRef = resolvedTypeRef(
 								coneType = coneClassLikeType(classId)
-							),
-							containingDeclarationSymbol = functionSymbol
+							)
 						)
 					}
 				)
@@ -355,13 +353,12 @@ class ClrCompilerBuiltinSymbolProvider(
 						coneType = coneClassLikeType(classId)
 					),
 					dispatchReceiverType = coneClassLikeType(classId),
-					valueParameters = { functionSymbol ->
+					valueParameters = {
 						+valueParameter(
 							name = Name.identifier("other"),
 							returnTypeRef = resolvedTypeRef(
 								coneType = coneClassLikeType(classId)
-							),
-							containingDeclarationSymbol = functionSymbol
+							)
 						)
 					}
 				)
@@ -391,13 +388,12 @@ class ClrCompilerBuiltinSymbolProvider(
 						coneType = coneClassLikeType(StandardClassIds.IntRange)
 					),
 					dispatchReceiverType = coneClassLikeType(classId),
-					valueParameters = { functionSymbol ->
+					valueParameters = {
 						+valueParameter(
 							name = Name.identifier("other"),
 							returnTypeRef = resolvedTypeRef(
 								coneType = coneClassLikeType(classId)
-							),
-							containingDeclarationSymbol = functionSymbol
+							)
 						)
 					}
 				)
@@ -430,13 +426,12 @@ class ClrCompilerBuiltinSymbolProvider(
 						coneType = coneClassLikeType(classId)
 					),
 					dispatchReceiverType = coneClassLikeType(classId),
-					valueParameters = { functionSymbol ->
+					valueParameters = {
 						+valueParameter(
 							name = Name.identifier("other"),
 							returnTypeRef = resolvedTypeRef(
 								coneType = coneClassLikeType(classId)
-							),
-							containingDeclarationSymbol = functionSymbol
+							)
 						)
 					}
 				)
@@ -448,13 +443,12 @@ class ClrCompilerBuiltinSymbolProvider(
 						coneType = coneClassLikeType(classId)
 					),
 					dispatchReceiverType = coneClassLikeType(classId),
-					valueParameters = { functionSymbol ->
+					valueParameters = {
 						+valueParameter(
 							name = Name.identifier("other"),
 							returnTypeRef = resolvedTypeRef(
 								coneType = coneClassLikeType(StandardClassIds.Int)
-							),
-							containingDeclarationSymbol = functionSymbol
+							)
 						)
 					}
 				)
@@ -475,7 +469,7 @@ class ClrCompilerBuiltinSymbolProvider(
 						coneType = coneClassLikeType(classId)
 					),
 					dispatchReceiverType = coneClassLikeType(classId),
-					valueParameters = { functionSymbol ->
+					valueParameters = {
 						+valueParameter(
 							name = Name.identifier("other"),
 							returnTypeRef = resolvedTypeRef(
@@ -483,8 +477,7 @@ class ClrCompilerBuiltinSymbolProvider(
 									classId = classId,
 									isMarkedNullable = true
 								)
-							),
-							containingDeclarationSymbol = functionSymbol
+							)
 						)
 					}
 				)
@@ -505,13 +498,12 @@ class ClrCompilerBuiltinSymbolProvider(
 						coneType = coneClassLikeType(StandardClassIds.Char)
 					),
 					dispatchReceiverType = coneClassLikeType(classId),
-					valueParameters = { functionSymbol ->
+					valueParameters = {
 						+valueParameter(
 							name = Name.identifier("index"),
 							returnTypeRef = resolvedTypeRef(
 								coneType = coneClassLikeType(StandardClassIds.Int)
-							),
-							containingDeclarationSymbol = functionSymbol
+							)
 						)
 					}
 				)
