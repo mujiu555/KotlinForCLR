@@ -16,28 +16,25 @@
 
 package compiler.clr.frontend.symbol
 
-import compiler.clr.frontend.NodeAssembly
+import compiler.clr.frontend.symbol.builder.*
+import org.jetbrains.kotlin.KtSourceElement
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.EffectiveVisibility
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.builder.buildPackageDirective
-import org.jetbrains.kotlin.fir.declarations.FirDeclarationOrigin
+import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.declarations.builder.*
-import org.jetbrains.kotlin.fir.declarations.impl.FirDeclarationStatusImpl
-import org.jetbrains.kotlin.fir.declarations.impl.FirResolvedDeclarationStatusImpl
+import org.jetbrains.kotlin.fir.expressions.FirAnnotation
 import org.jetbrains.kotlin.fir.resolve.providers.FirCompositeSymbolNamesProvider
 import org.jetbrains.kotlin.fir.resolve.providers.FirSymbolNamesProvider
 import org.jetbrains.kotlin.fir.resolve.providers.FirSymbolProvider
 import org.jetbrains.kotlin.fir.resolve.providers.FirSymbolProviderInternals
 import org.jetbrains.kotlin.fir.resolve.providers.impl.FirFallbackBuiltinSymbolProvider
 import org.jetbrains.kotlin.fir.scopes.FirKotlinScopeProvider
-import org.jetbrains.kotlin.fir.scopes.kotlinScopeProvider
 import org.jetbrains.kotlin.fir.symbols.SymbolInternals
 import org.jetbrains.kotlin.fir.symbols.impl.*
-import org.jetbrains.kotlin.fir.types.builder.buildResolvedTypeRef
-import org.jetbrains.kotlin.fir.types.impl.ConeClassLikeTypeImpl
 import org.jetbrains.kotlin.fir.types.impl.ConeTypeParameterTypeImpl
 import org.jetbrains.kotlin.fir.types.toLookupTag
 import org.jetbrains.kotlin.javac.resolve.classId
@@ -48,13 +45,11 @@ import org.jetbrains.kotlin.types.Variance
 class ClrBuiltinsSymbolProvider(
 	session: FirSession,
 	private val fallbackBuiltinSymbolProvider: FirFallbackBuiltinSymbolProvider,
-	assemblies: Map<String, NodeAssembly>,
 ) : FirSymbolProvider(session) {
 	private val assemblyBuiltinSymbolProvider = ClrCompilerBuiltinSymbolProvider(
 		session,
 		fallbackBuiltinSymbolProvider.moduleData,
-		fallbackBuiltinSymbolProvider.kotlinScopeProvider,
-		assemblies
+		fallbackBuiltinSymbolProvider.kotlinScopeProvider
 	)
 
 	override val symbolNamesProvider: FirSymbolNamesProvider
@@ -120,1158 +115,586 @@ class ClrCompilerBuiltinSymbolProvider(
 	session: FirSession,
 	moduleData: FirModuleData,
 	kotlinScopeProvider: FirKotlinScopeProvider,
-	assemblies: Map<String, NodeAssembly>,
 ) : FirSymbolProvider(session) {
-	private val annotationSymbol = StandardClassIds.Annotation.buildSymbol(moduleData) { classId, _, _ ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.OPEN,
-			EffectiveVisibility.Public
+	private val context = FirBuilderContext(moduleData, kotlinScopeProvider, FirDeclarationOrigin.BuiltIns)
+
+	private val annotationSymbol = context(context) {
+		buildSymbol(
+			classId = StandardClassIds.Annotation,
+			status = status(modality = Modality.OPEN),
+			classKind = ClassKind.INTERFACE
 		)
-		classKind = ClassKind.INTERFACE
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Any.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
-	}
-	private val anySymbol = StandardClassIds.Any.buildSymbol(moduleData) { classId, _, _ ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.OPEN,
-			EffectiveVisibility.Public
-		)
-		classKind = ClassKind.CLASS
-		declarations += FirConstructorSymbol(
-			callableId = classId.callableIdForConstructor()
-		).also { constructorSymbol ->
-			buildPrimaryConstructor {
-				this.moduleData = moduleData
-				origin = FirDeclarationOrigin.BuiltIns
-				status = FirResolvedDeclarationStatusImpl(
-					visibility = Visibilities.Public,
-					modality = Modality.FINAL,
-					effectiveVisibility = EffectiveVisibility.Public
-				)
-				returnTypeRef = buildResolvedTypeRef {
-					coneType = ConeClassLikeTypeImpl(
-						lookupTag = classId.toLookupTag(),
-						typeArguments = emptyArray(),
-						isMarkedNullable = false
-					)
-				}
-				symbol = constructorSymbol
-			}.apply {
-				containingClassForStaticMemberAttr = classId.toLookupTag()
-			}
-		}.fir
-		declarations += FirNamedFunctionSymbol(
-			callableId = CallableId(classId, Name.identifier("equals"))
-		).also { functionSymbol ->
-			buildSimpleFunction {
-				this.moduleData = moduleData
-				origin = FirDeclarationOrigin.BuiltIns
-				status = FirResolvedDeclarationStatusImpl(
-					visibility = Visibilities.Public,
-					modality = Modality.OPEN,
-					effectiveVisibility = EffectiveVisibility.Public
-				)
-				returnTypeRef = buildResolvedTypeRef {
-					coneType = ConeClassLikeTypeImpl(
-						lookupTag = StandardClassIds.Boolean.toLookupTag(),
-						typeArguments = emptyArray(),
-						isMarkedNullable = false
-					)
-				}
-				dispatchReceiverType = ConeClassLikeTypeImpl(
-					lookupTag = classId.toLookupTag(),
-					typeArguments = emptyArray(),
-					isMarkedNullable = false
-				)
-				valueParameters += FirValueParameterSymbol(
-					name = Name.identifier("other")
-				).also { valueParameterSymbol ->
-					buildValueParameter {
-						this.moduleData = moduleData
-						origin = FirDeclarationOrigin.BuiltIns
-						returnTypeRef = buildResolvedTypeRef {
-							coneType = ConeClassLikeTypeImpl(
-								lookupTag = StandardClassIds.Any.toLookupTag(),
-								typeArguments = emptyArray(),
-								isMarkedNullable = true
-							)
-						}
-						name = valueParameterSymbol.name
-						symbol = valueParameterSymbol
-						containingDeclarationSymbol = functionSymbol
-					}
-				}.fir
-				name = functionSymbol.name
-				symbol = functionSymbol
-			}.apply {
-				containingClassForStaticMemberAttr = classId.toLookupTag()
-			}
-		}.fir
-		declarations += FirNamedFunctionSymbol(
-			callableId = CallableId(classId, Name.identifier("hashCode"))
-		).also { functionSymbol ->
-			buildSimpleFunction {
-				this.moduleData = moduleData
-				origin = FirDeclarationOrigin.BuiltIns
-				status = FirResolvedDeclarationStatusImpl(
-					visibility = Visibilities.Public,
-					modality = Modality.OPEN,
-					effectiveVisibility = EffectiveVisibility.Public
-				)
-				returnTypeRef = buildResolvedTypeRef {
-					coneType = ConeClassLikeTypeImpl(
-						lookupTag = StandardClassIds.Int.toLookupTag(),
-						typeArguments = emptyArray(),
-						isMarkedNullable = false
-					)
-				}
-				dispatchReceiverType = ConeClassLikeTypeImpl(
-					lookupTag = classId.toLookupTag(),
-					typeArguments = emptyArray(),
-					isMarkedNullable = false
-				)
-				name = functionSymbol.name
-				symbol = functionSymbol
-			}.apply {
-				containingClassForStaticMemberAttr = classId.toLookupTag()
-			}
-		}.fir
-		declarations += FirNamedFunctionSymbol(
-			callableId = CallableId(classId, Name.identifier("toString"))
-		).also { functionSymbol ->
-			buildSimpleFunction {
-				this.moduleData = moduleData
-				origin = FirDeclarationOrigin.BuiltIns
-				status = FirResolvedDeclarationStatusImpl(
-					visibility = Visibilities.Public,
-					modality = Modality.OPEN,
-					effectiveVisibility = EffectiveVisibility.Public
-				)
-				returnTypeRef = buildResolvedTypeRef {
-					coneType = ConeClassLikeTypeImpl(
-						lookupTag = StandardClassIds.String.toLookupTag(),
-						typeArguments = emptyArray(),
-						isMarkedNullable = false
-					)
-				}
-				dispatchReceiverType = ConeClassLikeTypeImpl(
-					lookupTag = classId.toLookupTag(),
-					typeArguments = emptyArray(),
-					isMarkedNullable = false
-				)
-				name = functionSymbol.name
-				symbol = functionSymbol
-			}.apply {
-				containingClassForStaticMemberAttr = classId.toLookupTag()
-			}
-		}.fir
-	}
-	private val arraySymbol = StandardClassIds.Array.buildSymbol(moduleData) { classId, _, _ ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.FINAL,
-			EffectiveVisibility.Public
-		)
-		classKind = ClassKind.CLASS
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Any.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
-	}
-	private val byteArraySymbol = classId("kotlin", "ByteArray").buildSymbol(moduleData) { classId, _, _ ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.FINAL,
-			EffectiveVisibility.Public
-		)
-		classKind = ClassKind.CLASS
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Any.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
-	}
-	private val charArraySymbol = classId("kotlin", "CharArray").buildSymbol(moduleData) { classId, _, _ ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.FINAL,
-			EffectiveVisibility.Public
-		)
-		classKind = ClassKind.CLASS
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Any.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
-	}
-	private val shortArraySymbol = classId("kotlin", "ShortArray").buildSymbol(moduleData) { classId, _, _ ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.FINAL,
-			EffectiveVisibility.Public
-		)
-		classKind = ClassKind.CLASS
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Any.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
-	}
-	private val intArraySymbol = classId("kotlin", "IntArray").buildSymbol(moduleData) { classId, _, _ ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.FINAL,
-			EffectiveVisibility.Public
-		)
-		classKind = ClassKind.CLASS
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Any.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
-	}
-	private val longArraySymbol = classId("kotlin", "LongArray").buildSymbol(moduleData) { classId, _, _ ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.FINAL,
-			EffectiveVisibility.Public
-		)
-		classKind = ClassKind.CLASS
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Any.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
-	}
-	private val floatArraySymbol = classId("kotlin", "FloatArray").buildSymbol(moduleData) { classId, _, _ ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.FINAL,
-			EffectiveVisibility.Public
-		)
-		classKind = ClassKind.CLASS
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Any.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
-	}
-	private val doubleArraySymbol = classId("kotlin", "DoubleArray").buildSymbol(moduleData) { classId, _, _ ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.FINAL,
-			EffectiveVisibility.Public
-		)
-		classKind = ClassKind.CLASS
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Any.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
-	}
-	private val booleanArraySymbol = classId("kotlin", "BooleanArray").buildSymbol(moduleData) { classId, _, _ ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.FINAL,
-			EffectiveVisibility.Public
-		)
-		classKind = ClassKind.CLASS
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Any.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
-	}
-	private val booleanSymbol = StandardClassIds.Boolean.buildSymbol(moduleData) { classId, _, _ ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.FINAL,
-			EffectiveVisibility.Public
-		)
-		classKind = ClassKind.CLASS
-		declarations += FirNamedFunctionSymbol(
-			callableId = CallableId(classId, Name.identifier("not"))
-		).also { functionSymbol ->
-			buildSimpleFunction {
-				this.moduleData = moduleData
-				origin = FirDeclarationOrigin.BuiltIns
-				status = FirDeclarationStatusImpl(
-					Visibilities.Public,
-					Modality.FINAL
-				).apply {
-					isOperator = true
-				}.resolved(
-					Visibilities.Public,
-					Modality.FINAL,
-					EffectiveVisibility.Public
-				)
-				returnTypeRef = buildResolvedTypeRef {
-					coneType = ConeClassLikeTypeImpl(
-						lookupTag = classId.toLookupTag(),
-						typeArguments = emptyArray(),
-						isMarkedNullable = false
-					)
-				}
-				dispatchReceiverType = ConeClassLikeTypeImpl(
-					lookupTag = classId.toLookupTag(),
-					typeArguments = emptyArray(),
-					isMarkedNullable = false
-				)
-				name = functionSymbol.name
-				symbol = functionSymbol
-			}
-		}.fir
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Any.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
-	}
-	private val charSymbol = StandardClassIds.Char.buildSymbol(moduleData) { classId, _, _ ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.FINAL,
-			EffectiveVisibility.Public
-		)
-		classKind = ClassKind.CLASS
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Any.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
-	}
-	private val charSequenceSymbol = StandardClassIds.CharSequence.buildSymbol(moduleData) { classId, _, _ ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.OPEN,
-			EffectiveVisibility.Public
-		)
-		classKind = ClassKind.INTERFACE
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Any.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
-	}
-	private val comparableSymbol = StandardClassIds.Comparable.buildSymbol(moduleData) { classId, _, _ ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.OPEN,
-			EffectiveVisibility.Public
-		)
-		classKind = ClassKind.INTERFACE
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Any.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
-	}
-	private val enumSymbol = StandardClassIds.Enum.buildSymbol(moduleData) { classId, _, _ ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.ABSTRACT,
-			EffectiveVisibility.Public
-		)
-		classKind = ClassKind.CLASS
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Any.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
-	}
-	private val nothingSymbol = StandardClassIds.Nothing.buildSymbol(moduleData) { classId, _, _ ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.FINAL,
-			EffectiveVisibility.Public
-		)
-		classKind = ClassKind.CLASS
-		declarations += FirConstructorSymbol(
-			callableId = classId.callableIdForConstructor()
-		).also { constructorSymbol ->
-			buildPrimaryConstructor {
-				this.moduleData = moduleData
-				origin = FirDeclarationOrigin.BuiltIns
-				status = FirResolvedDeclarationStatusImpl(
-					visibility = Visibilities.Private,
-					modality = Modality.FINAL,
-					effectiveVisibility = EffectiveVisibility.PrivateInClass
-				)
-				returnTypeRef = buildResolvedTypeRef {
-					coneType = ConeClassLikeTypeImpl(
-						lookupTag = classId.toLookupTag(),
-						typeArguments = emptyArray(),
-						isMarkedNullable = false
-					)
-				}
-				symbol = constructorSymbol
-			}.apply {
-				containingClassForStaticMemberAttr = classId.toLookupTag()
-			}
-		}.fir
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Any.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
-	}
-	private val numberSymbol = StandardClassIds.Number.buildSymbol(moduleData) { classId, _, _ ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.ABSTRACT,
-			EffectiveVisibility.Public
-		)
-		classKind = ClassKind.CLASS
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Any.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
-	}
-	private val byteSymbol = StandardClassIds.Byte.buildSymbol(moduleData) { classId, _, _ ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.FINAL,
-			EffectiveVisibility.Public
-		)
-		classKind = ClassKind.CLASS
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Number.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
-	}
-	private val shortSymbol = StandardClassIds.Short.buildSymbol(moduleData) { classId, _, _ ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.FINAL,
-			EffectiveVisibility.Public
-		)
-		classKind = ClassKind.CLASS
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Number.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
-	}
-	private val intSymbol = StandardClassIds.Int.buildSymbol(moduleData) { classId, _, _ ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.FINAL,
-			EffectiveVisibility.Public
-		)
-		classKind = ClassKind.CLASS
-		declarations += FirNamedFunctionSymbol(
-			callableId = CallableId(classId, Name.identifier("plus"))
-		).also { functionSymbol ->
-			buildSimpleFunction {
-				this.moduleData = moduleData
-				origin = FirDeclarationOrigin.BuiltIns
-				status = FirDeclarationStatusImpl(
-					Visibilities.Public,
-					Modality.FINAL
-				).apply {
-					isOperator = true
-				}.resolved(
-					Visibilities.Public,
-					Modality.FINAL,
-					EffectiveVisibility.Public
-				)
-				returnTypeRef = buildResolvedTypeRef {
-					coneType = ConeClassLikeTypeImpl(
-						classId.toLookupTag(),
-						emptyArray(),
-						false
-					)
-				}
-				dispatchReceiverType = ConeClassLikeTypeImpl(
-					classId.toLookupTag(),
-					emptyArray(),
-					false
-				)
-				valueParameters += FirValueParameterSymbol(Name.identifier("other")).also { valueParameterSymbol ->
-					buildValueParameter {
-						this.moduleData = moduleData
-						origin = FirDeclarationOrigin.BuiltIns
-						returnTypeRef = buildResolvedTypeRef {
-							coneType = ConeClassLikeTypeImpl(
-								classId.toLookupTag(),
-								emptyArray(),
-								false
-							)
-						}
-						name = valueParameterSymbol.name
-						symbol = valueParameterSymbol
-						containingDeclarationSymbol = functionSymbol
-					}
-				}.fir
-				name = functionSymbol.callableId.callableName
-				symbol = functionSymbol
-			}
-		}.fir
-		declarations += FirNamedFunctionSymbol(
-			callableId = CallableId(classId, Name.identifier("compareTo"))
-		).also { functionSymbol ->
-			buildSimpleFunction {
-				this.moduleData = moduleData
-				origin = FirDeclarationOrigin.BuiltIns
-				status = FirDeclarationStatusImpl(
-					Visibilities.Public,
-					Modality.FINAL
-				).apply {
-					isOperator = true
-				}.resolved(
-					Visibilities.Public,
-					Modality.FINAL,
-					EffectiveVisibility.Public
-				)
-				returnTypeRef = buildResolvedTypeRef {
-					coneType = ConeClassLikeTypeImpl(
-						classId.toLookupTag(),
-						emptyArray(),
-						false
-					)
-				}
-				dispatchReceiverType = ConeClassLikeTypeImpl(
-					classId.toLookupTag(),
-					emptyArray(),
-					false
-				)
-				valueParameters += FirValueParameterSymbol(Name.identifier("other")).also { valueParameterSymbol ->
-					buildValueParameter {
-						this.moduleData = moduleData
-						origin = FirDeclarationOrigin.BuiltIns
-						returnTypeRef = buildResolvedTypeRef {
-							coneType = ConeClassLikeTypeImpl(
-								classId.toLookupTag(),
-								emptyArray(),
-								false
-							)
-						}
-						name = valueParameterSymbol.name
-						symbol = valueParameterSymbol
-						containingDeclarationSymbol = functionSymbol
-					}
-				}.fir
-				name = functionSymbol.callableId.callableName
-				symbol = functionSymbol
-			}
-		}.fir
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Number.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
-	}
-	private val longSymbol = StandardClassIds.Long.buildSymbol(moduleData) { classId, _, _ ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.FINAL,
-			EffectiveVisibility.Public
-		)
-		classKind = ClassKind.CLASS
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Number.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
-	}
-	private val floatSymbol = StandardClassIds.Float.buildSymbol(moduleData) { classId, _, _ ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.FINAL,
-			EffectiveVisibility.Public
-		)
-		classKind = ClassKind.CLASS
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Number.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
-	}
-	private val doubleSymbol = StandardClassIds.Double.buildSymbol(moduleData) { classId, _, _ ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.FINAL,
-			EffectiveVisibility.Public
-		)
-		classKind = ClassKind.CLASS
-		declarations += FirNamedFunctionSymbol(
-			callableId = CallableId(classId, Name.identifier("plus"))
-		).also { functionSymbol ->
-			buildSimpleFunction {
-				this.moduleData = moduleData
-				origin = FirDeclarationOrigin.BuiltIns
-				status = FirDeclarationStatusImpl(
-					Visibilities.Public,
-					Modality.FINAL
-				).apply {
-					isOperator = true
-				}.resolved(
-					Visibilities.Public,
-					Modality.FINAL,
-					EffectiveVisibility.Public
-				)
-				returnTypeRef = buildResolvedTypeRef {
-					coneType = ConeClassLikeTypeImpl(
-						classId.toLookupTag(),
-						emptyArray(),
-						false
-					)
-				}
-				dispatchReceiverType = ConeClassLikeTypeImpl(
-					classId.toLookupTag(),
-					emptyArray(),
-					false
-				)
-				valueParameters += FirValueParameterSymbol(Name.identifier("other")).also { valueParameterSymbol ->
-					buildValueParameter {
-						this.moduleData = moduleData
-						origin = FirDeclarationOrigin.BuiltIns
-						returnTypeRef = buildResolvedTypeRef {
-							coneType = ConeClassLikeTypeImpl(
-								classId.toLookupTag(),
-								emptyArray(),
-								false
-							)
-						}
-						name = valueParameterSymbol.name
-						symbol = valueParameterSymbol
-						containingDeclarationSymbol = functionSymbol
-					}
-				}.fir
-				name = functionSymbol.callableId.callableName
-				symbol = functionSymbol
-			}
-		}.fir
-		declarations += FirNamedFunctionSymbol(
-			callableId = CallableId(classId, Name.identifier("times"))
-		).also { functionSymbol ->
-			buildSimpleFunction {
-				this.moduleData = moduleData
-				origin = FirDeclarationOrigin.BuiltIns
-				status = FirDeclarationStatusImpl(
-					Visibilities.Public,
-					Modality.FINAL
-				).apply {
-					isOperator = true
-				}.resolved(
-					Visibilities.Public,
-					Modality.FINAL,
-					EffectiveVisibility.Public
-				)
-				returnTypeRef = buildResolvedTypeRef {
-					coneType = ConeClassLikeTypeImpl(
-						classId.toLookupTag(),
-						emptyArray(),
-						false
-					)
-				}
-				dispatchReceiverType = ConeClassLikeTypeImpl(
-					classId.toLookupTag(),
-					emptyArray(),
-					false
-				)
-				valueParameters += FirValueParameterSymbol(Name.identifier("other")).also { valueParameterSymbol ->
-					buildValueParameter {
-						this.moduleData = moduleData
-						origin = FirDeclarationOrigin.BuiltIns
-						returnTypeRef = buildResolvedTypeRef {
-							coneType = ConeClassLikeTypeImpl(
-								StandardClassIds.Int.toLookupTag(),
-								emptyArray(),
-								false
-							)
-						}
-						name = valueParameterSymbol.name
-						symbol = valueParameterSymbol
-						containingDeclarationSymbol = functionSymbol
-					}
-				}.fir
-				name = functionSymbol.callableId.callableName
-				symbol = functionSymbol
-			}
-		}.fir
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Number.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
-	}
-	private val stringSymbol = StandardClassIds.String.buildSymbol(moduleData) { classId, _, _ ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.FINAL,
-			EffectiveVisibility.Public
-		)
-		classKind = ClassKind.CLASS
-		declarations += FirNamedFunctionSymbol(
-			callableId = CallableId(classId, Name.identifier("plus"))
-		).also { functionSymbol ->
-			buildSimpleFunction {
-				this.moduleData = moduleData
-				origin = FirDeclarationOrigin.BuiltIns
-				status = FirDeclarationStatusImpl(
-					Visibilities.Public,
-					Modality.OPEN
-				).apply {
-					isOperator = true
-				}.resolved(
-					Visibilities.Public,
-					Modality.FINAL,
-					EffectiveVisibility.Public
-				)
-				returnTypeRef = buildResolvedTypeRef {
-					coneType = ConeClassLikeTypeImpl(
-						lookupTag = classId.toLookupTag(),
-						typeArguments = emptyArray(),
-						isMarkedNullable = false
-					)
-				}
-				dispatchReceiverType = ConeClassLikeTypeImpl(
-					lookupTag = classId.toLookupTag(),
-					typeArguments = emptyArray(),
-					isMarkedNullable = false
-				)
-				valueParameters += FirValueParameterSymbol(Name.identifier("other")).also { valueParameterSymbol ->
-					buildValueParameter {
-						this.moduleData = moduleData
-						origin = FirDeclarationOrigin.BuiltIns
-						returnTypeRef = buildResolvedTypeRef {
-							coneType = ConeClassLikeTypeImpl(
-								lookupTag = classId.toLookupTag(),
-								typeArguments = emptyArray(),
-								isMarkedNullable = true
-							)
-						}
-						name = valueParameterSymbol.name
-						symbol = valueParameterSymbol
-						containingDeclarationSymbol = functionSymbol
-					}
-				}.fir
-				name = functionSymbol.name
-				symbol = functionSymbol
-			}
-		}.fir
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Any.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
-	}
-	private val throwableSymbol = StandardClassIds.Throwable.buildSymbol(moduleData) { classId, _, _ ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.OPEN,
-			EffectiveVisibility.Public
-		)
-		classKind = ClassKind.CLASS
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Any.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
 	}
 
-	private val iterableSymbol = StandardClassIds.Iterable.buildSymbol(moduleData) { classId, _, _ ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.OPEN,
-			EffectiveVisibility.Public
-		)
-		classKind = ClassKind.INTERFACE
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Any.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
-	}
-	private val mutableIterableSymbol = StandardClassIds.MutableIterable.buildSymbol(moduleData) { classId, _, _ ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.OPEN,
-			EffectiveVisibility.Public
-		)
-		classKind = ClassKind.INTERFACE
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Any.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
-	}
-	private val collectionSymbol = StandardClassIds.Collection.buildSymbol(moduleData) { classId, _, _ ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.OPEN,
-			EffectiveVisibility.Public
-		)
-		classKind = ClassKind.INTERFACE
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Any.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
-	}
-	private val mutableCollectionSymbol = StandardClassIds.MutableCollection.buildSymbol(moduleData) { classId, _, _ ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.OPEN,
-			EffectiveVisibility.Public
-		)
-		classKind = ClassKind.INTERFACE
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Any.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
-	}
-	private val listSymbol = StandardClassIds.List.buildSymbol(moduleData) { classId, _, classSymbol ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.OPEN,
-			EffectiveVisibility.Public
-		)
-		classKind = ClassKind.INTERFACE
-		val typeParameter = FirTypeParameterSymbol().also { typeParameterSymbol ->
-			buildTypeParameter {
-				this.moduleData = moduleData
-				origin = FirDeclarationOrigin.BuiltIns
-				name = Name.identifier("E")
-				symbol = typeParameterSymbol
-				containingDeclarationSymbol = classSymbol
-				variance = Variance.OUT_VARIANCE
-				isReified = true
-				bounds += buildResolvedTypeRef {
-					coneType = ConeClassLikeTypeImpl(
-						classId("kotlin", "Any").toLookupTag(),
-						emptyArray(),
-						true
-					)
+	private val anySymbol = context(context) {
+		buildSymbol(
+			classId = StandardClassIds.Any,
+			status = status(modality = Modality.OPEN),
+			declarations = {
+				val classId = implicit<FirRegularClassBuilder>().symbol.classId
+
+				+primaryConstructor().apply {
+					containingClassForStaticMemberAttr = classId.toLookupTag()
 				}
-			}
-		}
-		typeParameters += typeParameter.fir
-		declarations += FirNamedFunctionSymbol(
-			callableId = CallableId(classId, Name.identifier("iterator"))
-		).also { functionSymbol ->
-			buildSimpleFunction {
-				this.moduleData = moduleData
-				origin = FirDeclarationOrigin.BuiltIns
-				status = FirDeclarationStatusImpl(
-					Visibilities.Public,
-					Modality.OPEN
+
+				+simpleFunction(
+					name = Name.identifier("equals"),
+					status = status(modality = Modality.OPEN),
+					returnTypeRef = resolvedTypeRef(
+						coneType = coneClassLikeType(StandardClassIds.Boolean)
+					),
+					dispatchReceiverType = coneClassLikeType(classId),
+					valueParameters = { functionSymbol ->
+						+valueParameter(
+							name = Name.identifier("other"),
+							returnTypeRef = resolvedTypeRef(
+								coneType = coneClassLikeType(
+									classId = StandardClassIds.Any,
+									isMarkedNullable = true
+								)
+							),
+							containingDeclarationSymbol = functionSymbol
+						)
+					}
 				).apply {
-					isOperator = true
-//					isOverride = true
-				}.resolved(
-					Visibilities.Public,
-					Modality.FINAL,
-					EffectiveVisibility.Public
-				)
-				returnTypeRef = buildResolvedTypeRef {
-					coneType = ConeClassLikeTypeImpl(
-						StandardClassIds.Iterator.toLookupTag(),
-						arrayOf(
-							ConeTypeParameterTypeImpl(
-								typeParameter.toLookupTag(),
-								false
-							)
-						),
-						false
-					)
+					containingClassForStaticMemberAttr = classId.toLookupTag()
 				}
-				dispatchReceiverType = ConeClassLikeTypeImpl(
-					classId.toLookupTag(),
-					emptyArray(),
-					false
-				)
-				name = functionSymbol.callableId.callableName
-				symbol = functionSymbol
-			}
-		}.fir
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Any.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
-	}
-	private val mutableListSymbol = StandardClassIds.MutableList.buildSymbol(moduleData) { classId, _, _ ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.OPEN,
-			EffectiveVisibility.Public
-		)
-		classKind = ClassKind.INTERFACE
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Any.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
-	}
-	private val setSymbol = StandardClassIds.Set.buildSymbol(moduleData) { classId, _, _ ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.OPEN,
-			EffectiveVisibility.Public
-		)
-		classKind = ClassKind.INTERFACE
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Any.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
-	}
-	private val mutableSetSymbol = StandardClassIds.MutableSet.buildSymbol(moduleData) { classId, _, _ ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.OPEN,
-			EffectiveVisibility.Public
-		)
-		classKind = ClassKind.INTERFACE
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Any.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
-	}
-	private val mapSymbol = StandardClassIds.Map.buildSymbol(moduleData) { classId, _, _ ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.OPEN,
-			EffectiveVisibility.Public
-		)
-		classKind = ClassKind.INTERFACE
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Any.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
-	}
-	private val mutableMapSymbol = StandardClassIds.MutableMap.buildSymbol(moduleData) { classId, _, _ ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.OPEN,
-			EffectiveVisibility.Public
-		)
-		classKind = ClassKind.INTERFACE
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Any.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
-	}
-	private val iteratorSymbol = StandardClassIds.Iterator.buildSymbol(moduleData) { classId, _, classSymbol ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.OPEN,
-			EffectiveVisibility.Public
-		)
-		classKind = ClassKind.INTERFACE
-		val typeParameter = FirTypeParameterSymbol().also { typeParameterSymbol ->
-			buildTypeParameter {
-				this.moduleData = moduleData
-				origin = FirDeclarationOrigin.BuiltIns
-				name = Name.identifier("T")
-				symbol = typeParameterSymbol
-				containingDeclarationSymbol = classSymbol
-				variance = Variance.OUT_VARIANCE
-				isReified = true
-			}
-		}
-		typeParameters += typeParameter.fir
-		declarations += FirNamedFunctionSymbol(
-			CallableId(classId, Name.identifier("next"))
-		).also { functionSymbol ->
-			buildSimpleFunction {
-				this.moduleData = moduleData
-				origin = FirDeclarationOrigin.BuiltIns
-				status = FirDeclarationStatusImpl(
-					Visibilities.Public,
-					Modality.FINAL
+
+				+simpleFunction(
+					name = Name.identifier("hashCode"),
+					status = status(modality = Modality.OPEN),
+					returnTypeRef = resolvedTypeRef(
+						coneType = coneClassLikeType(StandardClassIds.Int)
+					),
+					dispatchReceiverType = coneClassLikeType(classId)
 				).apply {
-					isOperator = true
-				}.resolved(
-					Visibilities.Public,
-					Modality.FINAL,
-					EffectiveVisibility.Public
-				)
-				returnTypeRef = buildResolvedTypeRef {
-					coneType = ConeTypeParameterTypeImpl(
-						typeParameter.toLookupTag(),
-						false
-					)
+					containingClassForStaticMemberAttr = classId.toLookupTag()
 				}
-				dispatchReceiverType = ConeClassLikeTypeImpl(
-					classId.toLookupTag(),
-					emptyArray(),
-					false
-				)
-				name = functionSymbol.callableId.callableName
-				symbol = functionSymbol
-			}
-		}.fir
-		declarations += FirNamedFunctionSymbol(
-			CallableId(classId, Name.identifier("hasNext"))
-		).also { functionSymbol ->
-			buildSimpleFunction {
-				this.moduleData = moduleData
-				origin = FirDeclarationOrigin.BuiltIns
-				status = FirDeclarationStatusImpl(
-					Visibilities.Public,
-					Modality.FINAL
+
+				+simpleFunction(
+					name = Name.identifier("toString"),
+					status = status(modality = Modality.OPEN),
+					returnTypeRef = resolvedTypeRef(
+						coneType = coneClassLikeType(StandardClassIds.String)
+					),
+					dispatchReceiverType = coneClassLikeType(classId)
 				).apply {
-					isOperator = true
-				}.resolved(
-					Visibilities.Public,
-					Modality.FINAL,
-					EffectiveVisibility.Public
-				)
-				returnTypeRef = buildResolvedTypeRef {
-					coneType = ConeClassLikeTypeImpl(
-						StandardClassIds.Boolean.toLookupTag(),
-						emptyArray(),
-						false
-					)
+					containingClassForStaticMemberAttr = classId.toLookupTag()
 				}
-				dispatchReceiverType = ConeClassLikeTypeImpl(
-					classId.toLookupTag(),
-					emptyArray(),
-					false
+			},
+			superTypeRefs = {}
+		)
+	}
+
+	private val arraySymbol = context(context) {
+		buildSymbol(
+			classId = StandardClassIds.Array
+		)
+	}
+
+	private val byteArraySymbol = context(context) {
+		buildSymbol(
+			classId = classId("kotlin", "ByteArray")
+		)
+	}
+
+	private val charArraySymbol = context(context) {
+		buildSymbol(
+			classId = classId("kotlin", "CharArray")
+		)
+	}
+
+	private val shortArraySymbol = context(context) {
+		buildSymbol(
+			classId = classId("kotlin", "ShortArray")
+		)
+	}
+
+	private val intArraySymbol = context(context) {
+		buildSymbol(
+			classId = classId("kotlin", "IntArray")
+		)
+	}
+
+	private val longArraySymbol = context(context) {
+		buildSymbol(
+			classId = classId("kotlin", "LongArray")
+		)
+	}
+
+	private val floatArraySymbol = context(context) {
+		buildSymbol(
+			classId = classId("kotlin", "FloatArray")
+		)
+	}
+
+	private val doubleArraySymbol = context(context) {
+		buildSymbol(
+			classId = classId("kotlin", "DoubleArray")
+		)
+	}
+
+	private val booleanArraySymbol = context(context) {
+		buildSymbol(
+			classId = classId("kotlin", "BooleanArray")
+		)
+	}
+
+	private val booleanSymbol = context(context) {
+		buildSymbol(
+			classId = StandardClassIds.Boolean,
+			declarations = {
+				val classId = implicit<FirRegularClassBuilder>().symbol.classId
+
+				+simpleFunction(
+					name = Name.identifier("not"),
+					status = status(isOperator = true),
+					returnTypeRef = resolvedTypeRef(
+						coneType = coneClassLikeType(classId)
+					),
+					dispatchReceiverType = coneClassLikeType(classId)
 				)
-				name = functionSymbol.callableId.callableName
-				symbol = functionSymbol
 			}
-		}.fir
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Any.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
-	}
-	private val mutableIteratorSymbol = StandardClassIds.MutableIterator.buildSymbol(moduleData) { classId, _, _ ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.OPEN,
-			EffectiveVisibility.Public
 		)
-		classKind = ClassKind.INTERFACE
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Any.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
 	}
-	private val listIteratorSymbol = StandardClassIds.ListIterator.buildSymbol(moduleData) { classId, _, _ ->
-		status = FirResolvedDeclarationStatusImpl(
-			Visibilities.Public,
-			Modality.OPEN,
-			EffectiveVisibility.Public
+
+	private val charSymbol = context(context) {
+		buildSymbol(
+			classId = StandardClassIds.Char
 		)
-		classKind = ClassKind.INTERFACE
-		superTypeRefs += buildResolvedTypeRef {
-			coneType = ConeClassLikeTypeImpl(
-				lookupTag = StandardClassIds.Any.toLookupTag(),
-				typeArguments = emptyArray(),
-				isMarkedNullable = false
-			)
-		}
 	}
-	private val mutableListIteratorSymbol =
-		StandardClassIds.MutableListIterator.buildSymbol(moduleData) { classId, _, _ ->
-			status = FirResolvedDeclarationStatusImpl(
-				Visibilities.Public,
-				Modality.OPEN,
-				EffectiveVisibility.Public
-			)
+
+	private val charSequenceSymbol = context(context) {
+		buildSymbol(
+			classId = StandardClassIds.CharSequence,
+			status = status(modality = Modality.OPEN),
 			classKind = ClassKind.INTERFACE
-			superTypeRefs += buildResolvedTypeRef {
-				coneType = ConeClassLikeTypeImpl(
-					lookupTag = StandardClassIds.Any.toLookupTag(),
-					typeArguments = emptyArray(),
-					isMarkedNullable = false
+		)
+	}
+
+	private val comparableSymbol = context(context) {
+		buildSymbol(
+			classId = StandardClassIds.Comparable,
+			status = status(modality = Modality.OPEN),
+			classKind = ClassKind.INTERFACE
+		)
+	}
+
+	private val enumSymbol = context(context) {
+		buildSymbol(
+			classId = StandardClassIds.Enum,
+			status = status(modality = Modality.ABSTRACT)
+		)
+	}
+
+	private val nothingSymbol = context(context) {
+		buildSymbol(
+			classId = StandardClassIds.Nothing,
+			declarations = {
+				val classId = implicit<FirRegularClassBuilder>().symbol.classId
+
+				+primaryConstructor(
+					status = status(
+						visibility = Visibilities.Private,
+						effectiveVisibility = EffectiveVisibility.PrivateInClass
+					)
+				).apply {
+					containingClassForStaticMemberAttr = classId.toLookupTag()
+				}
+			}
+		)
+	}
+
+	private val numberSymbol = context(context) {
+		buildSymbol(
+			classId = StandardClassIds.Number,
+			status = status(modality = Modality.ABSTRACT)
+		)
+	}
+
+	private val byteSymbol = context(context) {
+		buildSymbol(
+			classId = StandardClassIds.Byte
+		)
+	}
+
+	private val shortSymbol = context(context) {
+		buildSymbol(
+			classId = StandardClassIds.Short
+		)
+	}
+
+	private val intSymbol = context(context) {
+		buildSymbol(
+			classId = StandardClassIds.Int,
+			declarations = {
+				val classId = implicit<FirRegularClassBuilder>().symbol.classId
+
+				+simpleFunction(
+					name = Name.identifier("plus"),
+					status = status(isOperator = true),
+					returnTypeRef = resolvedTypeRef(
+						coneType = coneClassLikeType(classId)
+					),
+					dispatchReceiverType = coneClassLikeType(classId),
+					valueParameters = { functionSymbol ->
+						+valueParameter(
+							name = Name.identifier("other"),
+							returnTypeRef = resolvedTypeRef(
+								coneType = coneClassLikeType(classId)
+							),
+							containingDeclarationSymbol = functionSymbol
+						)
+					}
+				)
+
+				+simpleFunction(
+					name = Name.identifier("compareTo"),
+					status = status(isOperator = true),
+					returnTypeRef = resolvedTypeRef(
+						coneType = coneClassLikeType(classId)
+					),
+					dispatchReceiverType = coneClassLikeType(classId),
+					valueParameters = { functionSymbol ->
+						+valueParameter(
+							name = Name.identifier("other"),
+							returnTypeRef = resolvedTypeRef(
+								coneType = coneClassLikeType(classId)
+							),
+							containingDeclarationSymbol = functionSymbol
+						)
+					}
+				)
+
+				+simpleFunction(
+					name = Name.identifier("inc"),
+					status = status(modality = Modality.OPEN, isOperator = true),
+					returnTypeRef = resolvedTypeRef(
+						coneType = coneClassLikeType(classId)
+					),
+					dispatchReceiverType = coneClassLikeType(classId),
+				)
+
+				+simpleFunction(
+					name = Name.identifier("dec"),
+					status = status(modality = Modality.OPEN, isOperator = true),
+					returnTypeRef = resolvedTypeRef(
+						coneType = coneClassLikeType(classId)
+					),
+					dispatchReceiverType = coneClassLikeType(classId),
+				)
+
+				+simpleFunction(
+					name = Name.identifier("rangeTo"),
+					status = status(isOperator = true),
+					returnTypeRef = resolvedTypeRef(
+						coneType = coneClassLikeType(StandardClassIds.IntRange)
+					),
+					dispatchReceiverType = coneClassLikeType(classId),
+					valueParameters = { functionSymbol ->
+						+valueParameter(
+							name = Name.identifier("other"),
+							returnTypeRef = resolvedTypeRef(
+								coneType = coneClassLikeType(classId)
+							),
+							containingDeclarationSymbol = functionSymbol
+						)
+					}
 				)
 			}
-		}
+		)
+	}
+
+	private val longSymbol = context(context) {
+		buildSymbol(
+			classId = StandardClassIds.Long
+		)
+	}
+
+	private val floatSymbol = context(context) {
+		buildSymbol(
+			classId = StandardClassIds.Float
+		)
+	}
+
+	private val doubleSymbol = context(context) {
+		buildSymbol(
+			classId = StandardClassIds.Double,
+			declarations = {
+				val classId = implicit<FirRegularClassBuilder>().symbol.classId
+
+				+simpleFunction(
+					name = Name.identifier("plus"),
+					status = status(isOperator = true),
+					returnTypeRef = resolvedTypeRef(
+						coneType = coneClassLikeType(classId)
+					),
+					dispatchReceiverType = coneClassLikeType(classId),
+					valueParameters = { functionSymbol ->
+						+valueParameter(
+							name = Name.identifier("other"),
+							returnTypeRef = resolvedTypeRef(
+								coneType = coneClassLikeType(classId)
+							),
+							containingDeclarationSymbol = functionSymbol
+						)
+					}
+				)
+
+				+simpleFunction(
+					name = Name.identifier("times"),
+					status = status(isOperator = true),
+					returnTypeRef = resolvedTypeRef(
+						coneType = coneClassLikeType(classId)
+					),
+					dispatchReceiverType = coneClassLikeType(classId),
+					valueParameters = { functionSymbol ->
+						+valueParameter(
+							name = Name.identifier("other"),
+							returnTypeRef = resolvedTypeRef(
+								coneType = coneClassLikeType(StandardClassIds.Int)
+							),
+							containingDeclarationSymbol = functionSymbol
+						)
+					}
+				)
+			}
+		)
+	}
+
+	private val stringSymbol = context(context) {
+		buildSymbol(
+			classId = StandardClassIds.String,
+			declarations = {
+				val classId = implicit<FirRegularClassBuilder>().symbol.classId
+
+				+simpleFunction(
+					name = Name.identifier("plus"),
+					status = status(modality = Modality.OPEN, isOperator = true),
+					returnTypeRef = resolvedTypeRef(
+						coneType = coneClassLikeType(classId)
+					),
+					dispatchReceiverType = coneClassLikeType(classId),
+					valueParameters = { functionSymbol ->
+						+valueParameter(
+							name = Name.identifier("other"),
+							returnTypeRef = resolvedTypeRef(
+								coneType = coneClassLikeType(
+									classId = classId,
+									isMarkedNullable = true
+								)
+							),
+							containingDeclarationSymbol = functionSymbol
+						)
+					}
+				)
+
+				+property(
+					name = Name.identifier("length"),
+					status = status(modality = Modality.OPEN),
+					returnTypeRef = resolvedTypeRef(
+						coneType = coneClassLikeType(StandardClassIds.Int)
+					),
+					dispatchReceiverType = coneClassLikeType(classId)
+				)
+
+				+simpleFunction(
+					name = Name.identifier("get"),
+					status = status(modality = Modality.OPEN, isOperator = true),
+					returnTypeRef = resolvedTypeRef(
+						coneType = coneClassLikeType(StandardClassIds.Char)
+					),
+					dispatchReceiverType = coneClassLikeType(classId),
+					valueParameters = { functionSymbol ->
+						+valueParameter(
+							name = Name.identifier("index"),
+							returnTypeRef = resolvedTypeRef(
+								coneType = coneClassLikeType(StandardClassIds.Int)
+							),
+							containingDeclarationSymbol = functionSymbol
+						)
+					}
+				)
+			}
+		)
+	}
+
+	private val throwableSymbol = context(context) {
+		buildSymbol(
+			classId = StandardClassIds.Throwable,
+			status = status(modality = Modality.OPEN)
+		)
+	}
+
+	private val iterableSymbol = context(context) {
+		buildSymbol(
+			classId = StandardClassIds.Iterable,
+			status = status(modality = Modality.OPEN),
+			classKind = ClassKind.INTERFACE
+		)
+	}
+
+	private val mutableIterableSymbol = context(context) {
+		buildSymbol(
+			classId = StandardClassIds.MutableIterable,
+			status = status(modality = Modality.OPEN),
+			classKind = ClassKind.INTERFACE
+		)
+	}
+
+	private val collectionSymbol = context(context) {
+		buildSymbol(
+			classId = StandardClassIds.Collection,
+			status = status(modality = Modality.OPEN),
+			classKind = ClassKind.INTERFACE
+		)
+	}
+
+	private val mutableCollectionSymbol = context(context) {
+		buildSymbol(
+			classId = StandardClassIds.MutableCollection,
+			status = status(modality = Modality.OPEN),
+			classKind = ClassKind.INTERFACE
+		)
+	}
+
+	private val listSymbol = context(context) {
+		buildSymbol(
+			classId = StandardClassIds.List,
+			status = status(modality = Modality.OPEN),
+			classKind = ClassKind.INTERFACE,
+			typeParameters = {
+				+typeParameter(
+					name = Name.identifier("E"),
+					containingDeclarationSymbol = implicit<FirRegularClassBuilder>().symbol,
+					variance = Variance.OUT_VARIANCE,
+					isReified = true
+				)
+			},
+			declarations = {
+				val classId = implicit<FirRegularClassBuilder>().symbol.classId
+
+				+simpleFunction(
+					name = Name.identifier("iterator"),
+					status = status(modality = Modality.OPEN, isOperator = true),
+					returnTypeRef = resolvedTypeRef(
+						coneType = coneClassLikeType(
+							classId = StandardClassIds.Iterator,
+							typeArguments = arrayOf(
+								coneTypeParameterType(
+									symbol = implicit<FirRegularClassBuilder>().typeParameters.single().symbol
+								)
+							)
+						)
+					),
+					dispatchReceiverType = coneClassLikeType(classId)
+				)
+			}
+		)
+	}
+
+	private val mutableListSymbol = context(context) {
+		buildSymbol(
+			classId = StandardClassIds.MutableList,
+			status = status(modality = Modality.OPEN),
+			classKind = ClassKind.INTERFACE
+		)
+	}
+
+	private val setSymbol = context(context) {
+		buildSymbol(
+			classId = StandardClassIds.Set,
+			status = status(modality = Modality.OPEN),
+			classKind = ClassKind.INTERFACE
+		)
+	}
+
+	private val mutableSetSymbol = context(context) {
+		buildSymbol(
+			classId = StandardClassIds.MutableSet,
+			status = status(modality = Modality.OPEN),
+			classKind = ClassKind.INTERFACE
+		)
+	}
+
+	private val mapSymbol = context(context) {
+		buildSymbol(
+			classId = StandardClassIds.Map,
+			status = status(modality = Modality.OPEN),
+			classKind = ClassKind.INTERFACE
+		)
+	}
+
+	private val mutableMapSymbol = context(context) {
+		buildSymbol(
+			classId = StandardClassIds.MutableMap,
+			status = status(modality = Modality.OPEN),
+			classKind = ClassKind.INTERFACE
+		)
+	}
+
+	private val iteratorSymbol = context(context) {
+		buildSymbol(
+			classId = StandardClassIds.Iterator,
+			status = status(modality = Modality.OPEN),
+			classKind = ClassKind.INTERFACE,
+			typeParameters = {
+				+typeParameter(
+					name = Name.identifier("T"),
+					containingDeclarationSymbol = implicit<FirRegularClassBuilder>().symbol,
+					variance = Variance.OUT_VARIANCE,
+					isReified = true
+				)
+			},
+			declarations = {
+				val classId = implicit<FirRegularClassBuilder>().symbol.classId
+
+				+simpleFunction(
+					name = Name.identifier("next"),
+					status = status(isOperator = true),
+					returnTypeRef = resolvedTypeRef(
+						coneType = coneTypeParameterType(
+							symbol = implicit<FirRegularClassBuilder>().typeParameters.single().symbol
+						)
+					),
+					dispatchReceiverType = coneClassLikeType(classId)
+				)
+
+				+simpleFunction(
+					name = Name.identifier("hasNext"),
+					status = status(isOperator = true),
+					returnTypeRef = resolvedTypeRef(
+						coneType = coneClassLikeType(StandardClassIds.Boolean)
+					),
+					dispatchReceiverType = coneClassLikeType(classId)
+				)
+			}
+		)
+	}
+
+	private val mutableIteratorSymbol = context(context) {
+		buildSymbol(
+			classId = StandardClassIds.MutableIterator,
+			status = status(modality = Modality.OPEN),
+			classKind = ClassKind.INTERFACE
+		)
+	}
+
+	private val listIteratorSymbol = context(context) {
+		buildSymbol(
+			classId = StandardClassIds.ListIterator,
+			status = status(modality = Modality.OPEN),
+			classKind = ClassKind.INTERFACE
+		)
+	}
+
+	private val mutableListIteratorSymbol = context(context) {
+		buildSymbol(
+			classId = StandardClassIds.MutableListIterator,
+			status = status(modality = Modality.OPEN),
+			classKind = ClassKind.INTERFACE
+		)
+	}
 
 	@OptIn(FirImplementationDetail::class)
 	private val builtinsClassSymbols = listOf(
@@ -1318,36 +741,53 @@ class ClrCompilerBuiltinSymbolProvider(
 		mutableListIteratorSymbol
 	).associate { it.unpack() }
 
-	private fun ClassId.buildSymbol(
-		moduleData: FirModuleData,
-		build: FirRegularClassBuilder.(ClassId, FirFileSymbol, FirRegularClassSymbol) -> Unit,
-	): FirRegularClassSymbol {
-		val returnSymbol: FirRegularClassSymbol
-		FirFileSymbol().let { fileSymbol ->
-			val classId = this
-			buildFile {
-				this.moduleData = moduleData
-				origin = FirDeclarationOrigin.BuiltIns
-				packageDirective = buildPackageDirective {
-					packageFqName = classId.packageFqName
-				}
-				declarations += FirRegularClassSymbol(classId).also { classSymbol ->
-					returnSymbol = classSymbol
-					buildRegularClass {
-						this.moduleData = moduleData
-						origin = FirDeclarationOrigin.BuiltIns
-						name = classId.shortClassName
-						scopeProvider = session.kotlinScopeProvider
-						build(this@buildSymbol, fileSymbol, classSymbol)
-						symbol = classSymbol
-					}
-				}.fir
-				name = classId.shortClassName.asString()
-				symbol = fileSymbol
-			}
-		}
-		return returnSymbol
-	}
+	@OptIn(DirectDeclarationsAccess::class)
+	context(builder: FirBuilderContext)
+	private fun buildSymbol(
+		classId: ClassId,
+		source: KtSourceElement? = null,
+		resolvePhase: FirResolvePhase = FirResolvePhase.RAW_FIR,
+		attributes: FirDeclarationAttributes = FirDeclarationAttributes(),
+		typeParameters: context(FirRegularClassBuilder, TypeParametersBuilder) () -> Unit = {},
+		status: FirDeclarationStatus = status(),
+		deprecationsProvider: DeprecationsProvider = UnresolvedDeprecationProvider,
+		classKind: ClassKind = ClassKind.CLASS,
+		declarations: context(FirRegularClassBuilder, DeclarationsBuilder) () -> Unit = {},
+		annotations: List<FirAnnotation> = emptyList(),
+		name: Name = classId.shortClassName,
+		companionObjectSymbol: FirRegularClassSymbol? = null,
+		superTypeRefs: context(FirRegularClassBuilder, SuperTypeRefsBuilder) () -> Unit = {
+			+resolvedTypeRef(
+				coneType = coneClassLikeType(StandardClassIds.Any)
+			)
+		},
+		contextParameters: List<FirValueParameter> = emptyList(),
+		block: FirRegularClassBuilder.() -> Unit = {},
+	): FirRegularClassSymbol = file(
+		packageDirective = buildPackageDirective {
+			packageFqName = classId.packageFqName
+		},
+		declarations = {
+			+regularClass(
+				classId = classId,
+				source = source,
+				resolvePhase = resolvePhase,
+				attributes = attributes,
+				typeParameters = typeParameters,
+				status = status,
+				deprecationsProvider = deprecationsProvider,
+				classKind = classKind,
+				declarations = declarations,
+				annotations = annotations,
+				name = name,
+				companionObjectSymbol = companionObjectSymbol,
+				superTypeRefs = superTypeRefs,
+				contextParameters = contextParameters,
+				block = block,
+			)
+		},
+		name = classId.shortClassName.asString()
+	).declarations.single().symbol as FirRegularClassSymbol
 
 	private fun FirRegularClassSymbol.unpack(): Pair<ClassId, FirRegularClassSymbol> = classId to this
 

@@ -15,6 +15,7 @@
  */
 
 using kotlin.clr;
+using kotlin.collections;
 
 namespace kotlin.ranges;
 
@@ -50,12 +51,15 @@ public class IntProgression {
 		this.first = first;
 		this.step = step;
 	}
-	
+
 	[KotlinNotNull]
-	public int first { get; }
-	
+	 public int first { get; }
+
 	[KotlinNotNull]
-	public int step { get; }
+	 public int step { get; }
+
+	[KotlinNotNull]
+	public IntIterator iterator() => new IntProgressionIterator(first, 0, step);
 }
 
 public class LongProgression {

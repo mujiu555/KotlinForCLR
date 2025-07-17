@@ -573,7 +573,7 @@ public static class MainKt
 fun main() {
     val a = 1
     println(a == 10)
-    println(a == 10)
+    println(a != 10)
     println(a.equals(10))
 }
 ```

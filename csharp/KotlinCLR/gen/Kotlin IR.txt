@@ -20,7 +20,7 @@ MODULE_FRAGMENT name:<main>
             GET_VAR 'var a: kotlin.Int [var] declared in <root>.main' type=kotlin.Int origin=null
         TYPE_OP type=kotlin.Unit origin=IMPLICIT_COERCION_TO_UNIT typeOperand=kotlin.Unit
           CALL 'public final fun println (message: kotlin.Any?): kotlin.Unit? declared in kotlin.io' type=kotlin.Unit? origin=null
-            ARG message: CALL 'public final fun plus (other: kotlin.String?): kotlin.String [operator] declared in kotlin.String' type=kotlin.String origin=PLUS
+            ARG message: CALL 'public open fun plus (other: kotlin.String?): kotlin.String [operator] declared in kotlin.String' type=kotlin.String origin=PLUS
               ARG <this>: GET_VAR 'val s1: kotlin.String [val] declared in <root>.main' type=kotlin.String origin=null
               ARG other: GET_VAR 'val s2: kotlin.String [val] declared in <root>.main' type=kotlin.String origin=null
 

@@ -21,7 +21,12 @@ using kotlin.clr;
 
 namespace kotlin.collections;
 
-public class KotlinIterator<T> : IEnumerator<T> {
+public interface Iterator<T> {
+	public bool hasNext();
+	public T next();
+}
+
+public class KotlinIterator<T> : Iterator<T> {
 	public KotlinIterator([KotlinNotNull] IEnumerator<T> enumerator) {
 		this.enumerator = enumerator;
 	}
@@ -50,16 +55,4 @@ public class KotlinIterator<T> : IEnumerator<T> {
 		hasAdvanced = false;
 		return enumerator.Current;
 	}
-
-	[KotlinNotNull]
-	public bool MoveNext() => enumerator.MoveNext();
-	
-	public void Reset() => enumerator.Reset();
-	
-	[KotlinNotNull]
-	public T Current => enumerator.Current;
-	
-	object? IEnumerator.Current => Current;
-	
-	public void Dispose() => enumerator.Dispose();
 }

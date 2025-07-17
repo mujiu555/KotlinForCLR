@@ -217,6 +217,15 @@ class ClrSymbolProvider(
 			scopeProvider = session.kotlinScopeProvider
 			symbol = classSymbol
 			companionObjectSymbol = buildCompanionClass(node, classSymbol.classId)
+			listOfNotNull(node.baseType, *node.interfaces.toTypedArray()).forEach {
+				superTypeRefs += TypeResolver.resolveType(
+					namespace = it.namespace ?: "",
+					name = it.name,
+					isReturnPosition = false,
+					nullable = false,
+					typeParameters = emptyList()
+				)
+			}
 		}
 		clrSymbolNamesProvider.registerClassName(classSymbol.packageFqName(), classSymbol.name)
 		classPackages.getOrPut(

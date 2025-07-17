@@ -16,11 +16,50 @@
 
 namespace kotlin.collections;
 
-public abstract class ByteIterator {}
-public abstract class CharIterator {}
-public abstract class ShortIterator {}
-public abstract class IntIterator {}
-public abstract class LongIterator {}
-public abstract class FloatIterator {}
-public abstract class DoubleIterator {}
-public abstract class BooleanIterator {}
+public abstract class ByteIterator : Iterator<sbyte> {
+	public abstract bool hasNext();
+	public sbyte next() => nextByte();
+	public abstract sbyte nextByte();
+}
+
+public abstract class CharIterator : Iterator<char> {
+	public abstract bool hasNext();
+	public char next() => nextChar();
+	public abstract char nextChar();
+}
+
+public abstract class ShortIterator : Iterator<short> {
+	public abstract bool hasNext();
+	public short next() => nextShort();
+	public abstract short nextShort();
+}
+
+public abstract class IntIterator : Iterator<int> {
+	public abstract bool hasNext();
+	public int next() => nextInt();
+	public abstract int nextInt();
+}
+
+public abstract class LongIterator : Iterator<long> {
+	public abstract bool hasNext();
+	public long next() => nextLong();
+	public abstract long nextLong();
+}
+
+public abstract class FloatIterator : Iterator<float> {
+	public abstract bool hasNext();
+	public float next() => nextFloat();
+	public abstract float nextFloat();
+}
+
+public abstract class DoubleIterator : Iterator<double> {
+	public abstract bool hasNext();
+	public double next() => nextDouble();
+	public abstract double nextDouble();
+}
+
+public abstract class BooleanIterator : Iterator<bool> {
+	public abstract bool hasNext();
+	public bool next() => nextBoolean();
+	public abstract bool nextBoolean();
+}

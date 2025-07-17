@@ -74,7 +74,6 @@ object FirClrSessionFactory :
 					session,
 					moduleData,
 					scopeProvider,
-					assemblies.filter { it.key == "kotlin-stdlib" },
 				)
 			},
 			FirBuiltinSyntheticFunctionInterfaceProvider(session, moduleData, scopeProvider),
@@ -140,7 +139,7 @@ object FirClrSessionFactory :
 					symbolProvider,
 					generatedSymbolsProvider,
 					ClrSymbolProvider(session, assemblies, session.moduleData),
-					initializeForStdlibIfNeeded(projectEnvironment, session, kotlinScopeProvider, assemblies),
+					initializeForStdlibIfNeeded(projectEnvironment, session, kotlinScopeProvider),
 				)
 
 				SourceProviders(providers, null)
@@ -231,7 +230,6 @@ object FirClrSessionFactory :
 		projectEnvironment: AbstractProjectEnvironment,
 		session: FirSession,
 		kotlinScopeProvider: FirKotlinScopeProvider,
-		assemblies: Map<String, NodeAssembly>,
 	): FirSymbolProvider? {
 		return runIf(
 			session.languageVersionSettings.getFlag(AnalysisFlags.stdlibCompilation) &&
@@ -242,7 +240,6 @@ object FirClrSessionFactory :
 				session,
 				session.moduleData,
 				kotlinScopeProvider,
-				assemblies.filter { it.key == "kotlin-stdlib" },
 			)
 		}
 	}
@@ -251,10 +248,8 @@ object FirClrSessionFactory :
 		session: FirSession,
 		builtinsModuleData: FirModuleData,
 		kotlinScopeProvider: FirKotlinScopeProvider,
-		assemblies: Map<String, NodeAssembly>,
 	): ClrBuiltinsSymbolProvider = ClrBuiltinsSymbolProvider(
 		session,
 		FirFallbackBuiltinSymbolProvider(session, builtinsModuleData, kotlinScopeProvider),
-		assemblies,
 	)
 }
