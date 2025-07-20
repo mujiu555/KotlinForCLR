@@ -25,7 +25,7 @@ import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.fir.*
 import org.jetbrains.kotlin.fir.builder.buildPackageDirective
 import org.jetbrains.kotlin.fir.declarations.*
-import org.jetbrains.kotlin.fir.declarations.builder.*
+import org.jetbrains.kotlin.fir.declarations.builder.FirRegularClassBuilder
 import org.jetbrains.kotlin.fir.expressions.FirAnnotation
 import org.jetbrains.kotlin.fir.resolve.providers.FirCompositeSymbolNamesProvider
 import org.jetbrains.kotlin.fir.resolve.providers.FirSymbolNamesProvider
@@ -34,11 +34,16 @@ import org.jetbrains.kotlin.fir.resolve.providers.FirSymbolProviderInternals
 import org.jetbrains.kotlin.fir.resolve.providers.impl.FirFallbackBuiltinSymbolProvider
 import org.jetbrains.kotlin.fir.scopes.FirKotlinScopeProvider
 import org.jetbrains.kotlin.fir.symbols.SymbolInternals
-import org.jetbrains.kotlin.fir.symbols.impl.*
-import org.jetbrains.kotlin.fir.types.impl.ConeTypeParameterTypeImpl
+import org.jetbrains.kotlin.fir.symbols.impl.FirCallableSymbol
+import org.jetbrains.kotlin.fir.symbols.impl.FirNamedFunctionSymbol
+import org.jetbrains.kotlin.fir.symbols.impl.FirPropertySymbol
+import org.jetbrains.kotlin.fir.symbols.impl.FirRegularClassSymbol
 import org.jetbrains.kotlin.fir.types.toLookupTag
 import org.jetbrains.kotlin.javac.resolve.classId
-import org.jetbrains.kotlin.name.*
+import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.name.StandardClassIds
 import org.jetbrains.kotlin.types.Variance
 
 @OptIn(SymbolInternals::class)
@@ -330,34 +335,136 @@ class ClrCompilerBuiltinSymbolProvider(
 				val classId = implicit<FirRegularClassBuilder>().symbol.classId
 
 				+simpleFunction(
-					name = Name.identifier("plus"),
+					name = Name.identifier("compareTo"),
 					status = status(isOperator = true),
 					returnTypeRef = resolvedTypeRef(
-						coneType = coneClassLikeType(classId)
+						coneType = coneClassLikeType(StandardClassIds.Int)
 					),
 					dispatchReceiverType = coneClassLikeType(classId),
 					valueParameters = {
 						+valueParameter(
 							name = Name.identifier("other"),
 							returnTypeRef = resolvedTypeRef(
-								coneType = coneClassLikeType(classId)
+								coneType = coneClassLikeType(StandardClassIds.Int)
 							)
 						)
 					}
 				)
 
 				+simpleFunction(
-					name = Name.identifier("compareTo"),
+					name = Name.identifier("plus"),
 					status = status(isOperator = true),
 					returnTypeRef = resolvedTypeRef(
-						coneType = coneClassLikeType(classId)
+						coneType = coneClassLikeType(StandardClassIds.Int)
 					),
 					dispatchReceiverType = coneClassLikeType(classId),
 					valueParameters = {
 						+valueParameter(
 							name = Name.identifier("other"),
 							returnTypeRef = resolvedTypeRef(
-								coneType = coneClassLikeType(classId)
+								coneType = coneClassLikeType(StandardClassIds.Int)
+							)
+						)
+					}
+				)
+
+				+simpleFunction(
+					name = Name.identifier("plus"),
+					status = status(isOperator = true),
+					returnTypeRef = resolvedTypeRef(
+						coneType = coneClassLikeType(StandardClassIds.Long)
+					),
+					dispatchReceiverType = coneClassLikeType(classId),
+					valueParameters = {
+						+valueParameter(
+							name = Name.identifier("other"),
+							returnTypeRef = resolvedTypeRef(
+								coneType = coneClassLikeType(StandardClassIds.Long)
+							)
+						)
+					}
+				)
+
+				+simpleFunction(
+					name = Name.identifier("minus"),
+					status = status(isOperator = true),
+					returnTypeRef = resolvedTypeRef(
+						coneType = coneClassLikeType(StandardClassIds.Int)
+					),
+					dispatchReceiverType = coneClassLikeType(classId),
+					valueParameters = {
+						+valueParameter(
+							name = Name.identifier("other"),
+							returnTypeRef = resolvedTypeRef(
+								coneType = coneClassLikeType(StandardClassIds.Int)
+							)
+						)
+					}
+				)
+
+				+simpleFunction(
+					name = Name.identifier("times"),
+					status = status(isOperator = true),
+					returnTypeRef = resolvedTypeRef(
+						coneType = coneClassLikeType(StandardClassIds.Int)
+					),
+					dispatchReceiverType = coneClassLikeType(classId),
+					valueParameters = {
+						+valueParameter(
+							name = Name.identifier("other"),
+							returnTypeRef = resolvedTypeRef(
+								coneType = coneClassLikeType(StandardClassIds.Int)
+							)
+						)
+					}
+				)
+
+				+simpleFunction(
+					name = Name.identifier("times"),
+					status = status(isOperator = true),
+					returnTypeRef = resolvedTypeRef(
+						coneType = coneClassLikeType(StandardClassIds.Long)
+					),
+					dispatchReceiverType = coneClassLikeType(classId),
+					valueParameters = {
+						+valueParameter(
+							name = Name.identifier("other"),
+							returnTypeRef = resolvedTypeRef(
+								coneType = coneClassLikeType(StandardClassIds.Long)
+							)
+						)
+					}
+				)
+
+				+simpleFunction(
+					name = Name.identifier("div"),
+					status = status(isOperator = true),
+					returnTypeRef = resolvedTypeRef(
+						coneType = coneClassLikeType(StandardClassIds.Int)
+					),
+					dispatchReceiverType = coneClassLikeType(classId),
+					valueParameters = {
+						+valueParameter(
+							name = Name.identifier("other"),
+							returnTypeRef = resolvedTypeRef(
+								coneType = coneClassLikeType(StandardClassIds.Int)
+							)
+						)
+					}
+				)
+
+				+simpleFunction(
+					name = Name.identifier("rem"),
+					status = status(isOperator = true),
+					returnTypeRef = resolvedTypeRef(
+						coneType = coneClassLikeType(StandardClassIds.Int)
+					),
+					dispatchReceiverType = coneClassLikeType(classId),
+					valueParameters = {
+						+valueParameter(
+							name = Name.identifier("other"),
+							returnTypeRef = resolvedTypeRef(
+								coneType = coneClassLikeType(StandardClassIds.Int)
 							)
 						)
 					}
@@ -365,18 +472,18 @@ class ClrCompilerBuiltinSymbolProvider(
 
 				+simpleFunction(
 					name = Name.identifier("inc"),
-					status = status(modality = Modality.OPEN, isOperator = true),
+					status = status(isOperator = true),
 					returnTypeRef = resolvedTypeRef(
-						coneType = coneClassLikeType(classId)
+						coneType = coneClassLikeType(StandardClassIds.Int)
 					),
 					dispatchReceiverType = coneClassLikeType(classId),
 				)
 
 				+simpleFunction(
 					name = Name.identifier("dec"),
-					status = status(modality = Modality.OPEN, isOperator = true),
+					status = status(isOperator = true),
 					returnTypeRef = resolvedTypeRef(
-						coneType = coneClassLikeType(classId)
+						coneType = coneClassLikeType(StandardClassIds.Int)
 					),
 					dispatchReceiverType = coneClassLikeType(classId),
 				)
@@ -392,10 +499,18 @@ class ClrCompilerBuiltinSymbolProvider(
 						+valueParameter(
 							name = Name.identifier("other"),
 							returnTypeRef = resolvedTypeRef(
-								coneType = coneClassLikeType(classId)
+								coneType = coneClassLikeType(StandardClassIds.Int)
 							)
 						)
 					}
+				)
+
+				+simpleFunction(
+					name = Name.identifier("toLong"),
+					returnTypeRef = resolvedTypeRef(
+						coneType = coneClassLikeType(StandardClassIds.Long)
+					),
+					dispatchReceiverType = coneClassLikeType(classId)
 				)
 			}
 		)
@@ -403,7 +518,130 @@ class ClrCompilerBuiltinSymbolProvider(
 
 	private val longSymbol = context(context) {
 		buildSymbol(
-			classId = StandardClassIds.Long
+			classId = StandardClassIds.Long,
+			declarations = {
+				val classId = implicit<FirRegularClassBuilder>().symbol.classId
+
+				+simpleFunction(
+					name = Name.identifier("compareTo"),
+					status = status(isOperator = true),
+					returnTypeRef = resolvedTypeRef(
+						coneType = coneClassLikeType(StandardClassIds.Int)
+					),
+					dispatchReceiverType = coneClassLikeType(classId),
+					valueParameters = {
+						+valueParameter(
+							name = Name.identifier("other"),
+							returnTypeRef = resolvedTypeRef(
+								coneType = coneClassLikeType(StandardClassIds.Int)
+							)
+						)
+					}
+				)
+
+				+simpleFunction(
+					name = Name.identifier("compareTo"),
+					status = status(isOperator = true),
+					returnTypeRef = resolvedTypeRef(
+						coneType = coneClassLikeType(StandardClassIds.Int)
+					),
+					dispatchReceiverType = coneClassLikeType(classId),
+					valueParameters = {
+						+valueParameter(
+							name = Name.identifier("other"),
+							returnTypeRef = resolvedTypeRef(
+								coneType = coneClassLikeType(StandardClassIds.Long)
+							)
+						)
+					}
+				)
+
+				+simpleFunction(
+					name = Name.identifier("plus"),
+					status = status(isOperator = true),
+					returnTypeRef = resolvedTypeRef(
+						coneType = coneClassLikeType(StandardClassIds.Long)
+					),
+					dispatchReceiverType = coneClassLikeType(classId),
+					valueParameters = {
+						+valueParameter(
+							name = Name.identifier("other"),
+							returnTypeRef = resolvedTypeRef(
+								coneType = coneClassLikeType(StandardClassIds.Int)
+							)
+						)
+					}
+				)
+
+				+simpleFunction(
+					name = Name.identifier("plus"),
+					status = status(isOperator = true),
+					returnTypeRef = resolvedTypeRef(
+						coneType = coneClassLikeType(StandardClassIds.Long)
+					),
+					dispatchReceiverType = coneClassLikeType(classId),
+					valueParameters = {
+						+valueParameter(
+							name = Name.identifier("other"),
+							returnTypeRef = resolvedTypeRef(
+								coneType = coneClassLikeType(StandardClassIds.Long)
+							)
+						)
+					}
+				)
+
+				+simpleFunction(
+					name = Name.identifier("minus"),
+					status = status(isOperator = true),
+					returnTypeRef = resolvedTypeRef(
+						coneType = coneClassLikeType(StandardClassIds.Long)
+					),
+					dispatchReceiverType = coneClassLikeType(classId),
+					valueParameters = {
+						+valueParameter(
+							name = Name.identifier("other"),
+							returnTypeRef = resolvedTypeRef(
+								coneType = coneClassLikeType(StandardClassIds.Int)
+							)
+						)
+					}
+				)
+
+				+simpleFunction(
+					name = Name.identifier("minus"),
+					status = status(isOperator = true),
+					returnTypeRef = resolvedTypeRef(
+						coneType = coneClassLikeType(StandardClassIds.Long)
+					),
+					dispatchReceiverType = coneClassLikeType(classId),
+					valueParameters = {
+						+valueParameter(
+							name = Name.identifier("other"),
+							returnTypeRef = resolvedTypeRef(
+								coneType = coneClassLikeType(StandardClassIds.Long)
+							)
+						)
+					}
+				)
+
+				+simpleFunction(
+					name = Name.identifier("inc"),
+					status = status(isOperator = true),
+					returnTypeRef = resolvedTypeRef(
+						coneType = coneClassLikeType(StandardClassIds.Long)
+					),
+					dispatchReceiverType = coneClassLikeType(classId),
+				)
+
+				+simpleFunction(
+					name = Name.identifier("dec"),
+					status = status(isOperator = true),
+					returnTypeRef = resolvedTypeRef(
+						coneType = coneClassLikeType(StandardClassIds.Long)
+					),
+					dispatchReceiverType = coneClassLikeType(classId),
+				)
+			}
 		)
 	}
 
@@ -586,10 +824,48 @@ class ClrCompilerBuiltinSymbolProvider(
 	}
 
 	private val mutableListSymbol = context(context) {
+		var typeParameter: FirTypeParameter? = null
 		buildSymbol(
 			classId = StandardClassIds.MutableList,
 			status = status(modality = Modality.OPEN),
-			classKind = ClassKind.INTERFACE
+			classKind = ClassKind.INTERFACE,
+			typeParameters = {
+				+typeParameter(
+					name = Name.identifier("E"),
+					containingDeclarationSymbol = implicit<FirRegularClassBuilder>().symbol,
+					variance = Variance.OUT_VARIANCE,
+					isReified = true
+				).also { typeParameter = it }
+			},
+			declarations = {
+				+simpleFunction(
+					name = Name.identifier("add"),
+					returnTypeRef = resolvedTypeRef(
+						coneType = coneClassLikeType(StandardClassIds.Boolean)
+					),
+					dispatchReceiverType = coneClassLikeType(implicit<FirRegularClassBuilder>().symbol.classId),
+					valueParameters = {
+						+valueParameter(
+							name = Name.identifier("element"),
+							returnTypeRef = resolvedTypeRef(
+								coneType = coneTypeParameterType(typeParameter!!.symbol)
+							)
+						)
+					}
+				)
+			},
+			superTypeRefs = {
+				+resolvedTypeRef(
+					coneType = coneClassLikeType(
+						classId = StandardClassIds.List,
+						typeArguments = arrayOf(
+							coneTypeParameterType(
+								symbol = implicit<FirRegularClassBuilder>().typeParameters.single().symbol
+							)
+						)
+					)
+				)
+			}
 		)
 	}
 
@@ -688,6 +964,92 @@ class ClrCompilerBuiltinSymbolProvider(
 		)
 	}
 
+	private val eventSymbol = context(context) {
+		buildSymbol(
+			classId = classId("kotlin", "Event"),
+			typeParameters = {
+				+typeParameter(
+					name = Name.identifier("R"),
+					containingDeclarationSymbol = implicit<FirRegularClassBuilder>().symbol,
+					isReified = true,
+				)
+				+typeParameter(
+					name = Name.identifier("T"),
+					containingDeclarationSymbol = implicit<FirRegularClassBuilder>().symbol,
+					isReified = true,
+					bounds = listOf(
+						resolvedTypeRef(
+							coneType = coneClassLikeType(
+								classId = StandardClassIds.Any,
+								isMarkedNullable = true
+							)
+						),
+						resolvedTypeRef(
+							coneType = coneClassLikeType(
+								classId = StandardClassIds.Function,
+								typeArguments = arrayOf(
+									coneTypeParameterType(
+										symbol = implicit<TypeParametersBuilder>().list[0].symbol
+									)
+								)
+							)
+						)
+					)
+				)
+			},
+			classKind = ClassKind.INTERFACE,
+			declarations = {
+				val classId = implicit<FirRegularClassBuilder>().symbol.classId
+				val typeParameters = implicit<FirRegularClassBuilder>().typeParameters
+
+				+simpleFunction(
+					name = Name.identifier("plusAssign"),
+					status = status(isOperator = true),
+					returnTypeRef = resolvedTypeRef(
+						coneType = coneClassLikeType(StandardClassIds.Unit)
+					),
+					dispatchReceiverType = coneClassLikeType(classId),
+					valueParameters = {
+						+valueParameter(
+							name = Name.identifier("other"),
+							returnTypeRef = resolvedTypeRef(
+								coneType = coneTypeParameterType(typeParameters[1].symbol)
+							)
+						)
+					}
+				)
+
+				+simpleFunction(
+					name = Name.identifier("minusAssign"),
+					status = status(isOperator = true),
+					returnTypeRef = resolvedTypeRef(
+						coneType = coneClassLikeType(StandardClassIds.Unit)
+					),
+					dispatchReceiverType = coneClassLikeType(classId),
+					valueParameters = {
+						+valueParameter(
+							name = Name.identifier("other"),
+							returnTypeRef = resolvedTypeRef(
+								coneType = coneTypeParameterType(typeParameters[1].symbol)
+							)
+						)
+					}
+				)
+
+				+simpleFunction(
+					name = Name.identifier("invoke"),
+					status = status(isOperator = true),
+					returnTypeRef = resolvedTypeRef(
+						coneType = coneTypeParameterType(
+							symbol = typeParameters[0].symbol
+						)
+					),
+					dispatchReceiverType = coneClassLikeType(classId)
+				)
+			}
+		)
+	}
+
 	@OptIn(FirImplementationDetail::class)
 	private val builtinsClassSymbols = listOf(
 		annotationSymbol,
@@ -730,7 +1092,9 @@ class ClrCompilerBuiltinSymbolProvider(
 		iteratorSymbol,
 		mutableIteratorSymbol,
 		listIteratorSymbol,
-		mutableListIteratorSymbol
+		mutableListIteratorSymbol,
+
+		eventSymbol,
 	).associate { it.unpack() }
 
 	@OptIn(DirectDeclarationsAccess::class)

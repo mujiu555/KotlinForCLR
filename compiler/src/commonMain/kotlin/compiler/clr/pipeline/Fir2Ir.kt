@@ -62,7 +62,7 @@ object Fir2Ir : PipelinePhase<ClrFrontendPipelineArtifact, ClrFir2IrPipelineArti
 			irGenerationExtensions
 		)
 
-		File(input.configuration.get(CLRConfigurationKeys.OUTPUT_DIRECTORY)!!, "Kotlin IR.txt").printWriter()
+		File(input.configuration.get(CLRConfigurationKeys.OUTPUT_DIRECTORY)!!, "KIR@Raw.txt").printWriter()
 			.use { writer ->
 				writer.println(fir2IrAndIrActualizerResult.irModuleFragment.dump())
 			}

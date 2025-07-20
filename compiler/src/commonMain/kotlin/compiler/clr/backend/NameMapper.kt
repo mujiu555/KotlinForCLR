@@ -1,4 +1,4 @@
-﻿/*
+/*
    Copyright 2025 Nyayurin
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,6 +14,12 @@
    limitations under the License.
  */
 
-namespace kotlin;
+package compiler.clr.backend
 
-public interface Function<out R>;
+import org.jetbrains.kotlin.name.Name
+
+fun Name.map() = when (asString()) {
+	 "<unused var>" -> "_"
+	"<unary>" -> "unary"
+	else -> asString()
+}

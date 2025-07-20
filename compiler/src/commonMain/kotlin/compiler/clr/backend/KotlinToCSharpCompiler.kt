@@ -74,16 +74,12 @@ object KotlinToCSharpCompiler {
 		configuration: CompilerConfiguration
 	) {
 		val map = codegenFactory.invokeCodegen(codegenInput)
-		File(configuration.get(CLRConfigurationKeys.OUTPUT_DIRECTORY)!!, "Raw Code Node.xml").printWriter().use { writer ->
-			map?.values?.forEach {
-				writer.println(it.render())
-			}
+		File(configuration.get(CLRConfigurationKeys.OUTPUT_DIRECTORY)!!, "BIR@Raw.xml").printWriter().use { writer ->
+			map?.let { writer.println(it.render()) }
 		}
 		val cleanedMap = map?.mapValues { it.value.clean() }
-		File(configuration.get(CLRConfigurationKeys.OUTPUT_DIRECTORY)!!, "Code Node.xml").printWriter().use { writer ->
-			cleanedMap?.values?.forEach {
-				writer.println(it.render())
-			}
+		File(configuration.get(CLRConfigurationKeys.OUTPUT_DIRECTORY)!!, "BIR@Cleaned.xml").printWriter().use { writer ->
+			cleanedMap?.let { writer.println(it.render()) }
 		}
 		FirDiagnosticsCompilerResultsReporter.reportToMessageCollector(
 			diagnosticsReporter,

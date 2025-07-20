@@ -16,28 +16,28 @@
 
 package compiler.clr.backend.codegen
 
-fun CodeNode.clean() = Cleaner().run { clean() }
+fun BackendIR.clean() = Cleaner().run { clean() }
 
 private class Cleaner {
-	fun CodeNode.clean(): CodeNode = when (this) {
-		is CodeNode.None -> clean()
-		is CodeNode.SingleLineList -> clean()
-		is CodeNode.MultiLineList -> clean()
-		is CodeNode.SingleLine -> clean()
-		is CodeNode.MultiLine -> clean()
-		is CodeNode.StringConcatenation -> clean()
-		is PlainNode.Plain -> clean()
-		is PlainNode.SingleLine -> clean()
-		is PlainNode.MultiLine -> clean()
-		is PaddingNode.If -> clean()
-		is PaddingNode.IfExp -> clean()
-		is PaddingNode.Block -> clean()
-		is PaddingNode.BlockList -> clean()
+	fun BackendIR.clean(): BackendIR = when (this) {
+		is BackendIR.None -> clean()
+		is BackendIR.SingleLineList -> clean()
+		is BackendIR.MultiLineList -> clean()
+		is BackendIR.SingleLine -> clean()
+		is BackendIR.MultiLine -> clean()
+		is BackendIR.StringConcatenation -> clean()
+		is PlainIR.Plain -> clean()
+		is PlainIR.SingleLine -> clean()
+		is PlainIR.MultiLine -> clean()
+		is PaddingIR.If -> clean()
+		is PaddingIR.IfExp -> clean()
+		is PaddingIR.Block -> clean()
+		is PaddingIR.BlockList -> clean()
 	}
 
-	private fun CodeNode.None.clean() = this
-	private fun CodeNode.SingleLineList.clean(): CodeNode {
-		val list = mutableListOf<CodeNode>()
+	private fun BackendIR.None.clean() = this
+	private fun BackendIR.SingleLineList.clean(): BackendIR {
+		val list = mutableListOf<BackendIR>()
 		when (nodes.size) {
 			0 -> {}
 			1 -> list += nodes.first().clean()
@@ -45,40 +45,40 @@ private class Cleaner {
 				var cur = nodes.first().clean()
 				nodes.drop(1).map { it.clean() }.forEach {
 					when (cur) {
-						is CodeNode.None -> {
+						is BackendIR.None -> {
 							list += cur
 							cur = it
 						}
 
-						is CodeNode.SingleLineList -> {
+						is BackendIR.SingleLineList -> {
 							list += cur
 							cur = it
 						}
 
-						is CodeNode.MultiLineList -> {
+						is BackendIR.MultiLineList -> {
 							list += cur
 							cur = it
 						}
 
-						is CodeNode.SingleLine -> {
+						is BackendIR.SingleLine -> {
 							list += cur
 							cur = it
 						}
 
-						is CodeNode.MultiLine -> {
+						is BackendIR.MultiLine -> {
 							list += cur
 							cur = it
 						}
 
-						is CodeNode.StringConcatenation -> {
+						is BackendIR.StringConcatenation -> {
 							list += cur
 							cur = it
 						}
 
-						is PlainNode.Plain -> {
+						is PlainIR.Plain -> {
 							when (it) {
-								is PlainNode.Plain -> {
-									cur = plainPlain(cur.text + it.text)
+								is PlainIR.Plain -> {
+									cur = plainIR(cur.text + it.text)
 								}
 
 								else -> {
@@ -88,32 +88,32 @@ private class Cleaner {
 							}
 						}
 
-						is PlainNode.SingleLine -> {
+						is PlainIR.SingleLine -> {
 							list += cur
 							cur = it
 						}
 
-						is PlainNode.MultiLine -> {
+						is PlainIR.MultiLine -> {
 							list += cur
 							cur = it
 						}
 
-						is PaddingNode.If -> {
+						is PaddingIR.If -> {
 							list += cur
 							cur = it
 						}
 
-						is PaddingNode.IfExp -> {
+						is PaddingIR.IfExp -> {
 							list += cur
 							cur = it
 						}
 
-						is PaddingNode.Block -> {
+						is PaddingIR.Block -> {
 							list += cur
 							cur = it
 						}
 
-						is PaddingNode.BlockList -> {
+						is PaddingIR.BlockList -> {
 							list += cur
 							cur = it
 						}
@@ -125,11 +125,11 @@ private class Cleaner {
 		if (list.size == 1) {
 			return list.single()
 		}
-		return singleLineListCode(list)
+		return singleLineListIR(list)
 	}
 
-	private fun CodeNode.MultiLineList.clean(): CodeNode {
-		val list = mutableListOf<CodeNode>()
+	private fun BackendIR.MultiLineList.clean(): BackendIR {
+		val list = mutableListOf<BackendIR>()
 		when (nodes.size) {
 			0 -> {}
 			1 -> list += nodes.first().clean()
@@ -137,40 +137,40 @@ private class Cleaner {
 				var cur = nodes.first().clean()
 				nodes.drop(1).map { it.clean() }.forEach {
 					when (cur) {
-						is CodeNode.None -> {
+						is BackendIR.None -> {
 							list += cur
 							cur = it
 						}
 
-						is CodeNode.SingleLineList -> {
+						is BackendIR.SingleLineList -> {
 							list += cur
 							cur = it
 						}
 
-						is CodeNode.MultiLineList -> {
+						is BackendIR.MultiLineList -> {
 							list += cur
 							cur = it
 						}
 
-						is CodeNode.SingleLine -> {
+						is BackendIR.SingleLine -> {
 							list += cur
 							cur = it
 						}
 
-						is CodeNode.MultiLine -> {
+						is BackendIR.MultiLine -> {
 							list += cur
 							cur = it
 						}
 
-						is CodeNode.StringConcatenation -> {
+						is BackendIR.StringConcatenation -> {
 							list += cur
 							cur = it
 						}
 
-						is PlainNode.Plain -> {
+						is PlainIR.Plain -> {
 							when (it) {
-								is PlainNode.Plain -> {
-									cur = plainPlain(cur.text + it.text)
+								is PlainIR.Plain -> {
+									cur = plainIR(cur.text + it.text)
 								}
 
 								else -> {
@@ -180,32 +180,32 @@ private class Cleaner {
 							}
 						}
 
-						is PlainNode.SingleLine -> {
+						is PlainIR.SingleLine -> {
 							list += cur
 							cur = it
 						}
 
-						is PlainNode.MultiLine -> {
+						is PlainIR.MultiLine -> {
 							list += cur
 							cur = it
 						}
 
-						is PaddingNode.If -> {
+						is PaddingIR.If -> {
 							list += cur
 							cur = it
 						}
 
-						is PaddingNode.IfExp -> {
+						is PaddingIR.IfExp -> {
 							list += cur
 							cur = it
 						}
 
-						is PaddingNode.Block -> {
+						is PaddingIR.Block -> {
 							list += cur
 							cur = it
 						}
 
-						is PaddingNode.BlockList -> {
+						is PaddingIR.BlockList -> {
 							list += cur
 							cur = it
 						}
@@ -217,11 +217,11 @@ private class Cleaner {
 		if (list.size == 1) {
 			return list.single()
 		}
-		return multiLineListCode(list)
+		return multiLineListIR(list)
 	}
 
-	private fun CodeNode.SingleLine.clean(): CodeNode {
-		val list = mutableListOf<CodeNode>()
+	private fun BackendIR.SingleLine.clean(): BackendIR {
+		val list = mutableListOf<BackendIR>()
 		when (nodes.size) {
 			0 -> {}
 			1 -> list += nodes.first().clean()
@@ -229,40 +229,40 @@ private class Cleaner {
 				var cur = nodes.first().clean()
 				nodes.drop(1).map { it.clean() }.forEach {
 					when (cur) {
-						is CodeNode.None -> {
+						is BackendIR.None -> {
 							list += cur
 							cur = it
 						}
 
-						is CodeNode.SingleLineList -> {
+						is BackendIR.SingleLineList -> {
 							list += cur
 							cur = it
 						}
 
-						is CodeNode.MultiLineList -> {
+						is BackendIR.MultiLineList -> {
 							list += cur
 							cur = it
 						}
 
-						is CodeNode.SingleLine -> {
+						is BackendIR.SingleLine -> {
 							list += cur
 							cur = it
 						}
 
-						is CodeNode.MultiLine -> {
+						is BackendIR.MultiLine -> {
 							list += cur
 							cur = it
 						}
 
-						is CodeNode.StringConcatenation -> {
+						is BackendIR.StringConcatenation -> {
 							list += cur
 							cur = it
 						}
 
-						is PlainNode.Plain -> {
+						is PlainIR.Plain -> {
 							when (it) {
-								is PlainNode.Plain -> {
-									cur = plainPlain(cur.text + it.text)
+								is PlainIR.Plain -> {
+									cur = plainIR(cur.text + it.text)
 								}
 
 								else -> {
@@ -272,32 +272,32 @@ private class Cleaner {
 							}
 						}
 
-						is PlainNode.SingleLine -> {
+						is PlainIR.SingleLine -> {
 							list += cur
 							cur = it
 						}
 
-						is PlainNode.MultiLine -> {
+						is PlainIR.MultiLine -> {
 							list += cur
 							cur = it
 						}
 
-						is PaddingNode.If -> {
+						is PaddingIR.If -> {
 							list += cur
 							cur = it
 						}
 
-						is PaddingNode.IfExp -> {
+						is PaddingIR.IfExp -> {
 							list += cur
 							cur = it
 						}
 
-						is PaddingNode.Block -> {
+						is PaddingIR.Block -> {
 							list += cur
 							cur = it
 						}
 
-						is PaddingNode.BlockList -> {
+						is PaddingIR.BlockList -> {
 							list += cur
 							cur = it
 						}
@@ -306,11 +306,11 @@ private class Cleaner {
 				list += cur
 			}
 		}
-		return singleLineCode(list)
+		return singleLineIR(list)
 	}
 
-	private fun CodeNode.MultiLine.clean(): CodeNode {
-		val list = mutableListOf<CodeNode>()
+	private fun BackendIR.MultiLine.clean(): BackendIR {
+		val list = mutableListOf<BackendIR>()
 		when (nodes.size) {
 			0 -> {}
 			1 -> list += nodes.first().clean()
@@ -318,40 +318,40 @@ private class Cleaner {
 				var cur = nodes.first().clean()
 				nodes.drop(1).map { it.clean() }.forEach {
 					when (cur) {
-						is CodeNode.None -> {
+						is BackendIR.None -> {
 							list += cur
 							cur = it
 						}
 
-						is CodeNode.SingleLineList -> {
+						is BackendIR.SingleLineList -> {
 							list += cur
 							cur = it
 						}
 
-						is CodeNode.MultiLineList -> {
+						is BackendIR.MultiLineList -> {
 							list += cur
 							cur = it
 						}
 
-						is CodeNode.SingleLine -> {
+						is BackendIR.SingleLine -> {
 							list += cur
 							cur = it
 						}
 
-						is CodeNode.MultiLine -> {
+						is BackendIR.MultiLine -> {
 							list += cur
 							cur = it
 						}
 
-						is CodeNode.StringConcatenation -> {
+						is BackendIR.StringConcatenation -> {
 							list += cur
 							cur = it
 						}
 
-						is PlainNode.Plain -> {
+						is PlainIR.Plain -> {
 							when (it) {
-								is PlainNode.Plain -> {
-									cur = plainPlain(cur.text + it.text)
+								is PlainIR.Plain -> {
+									cur = plainIR(cur.text + it.text)
 								}
 
 								else -> {
@@ -361,32 +361,32 @@ private class Cleaner {
 							}
 						}
 
-						is PlainNode.SingleLine -> {
+						is PlainIR.SingleLine -> {
 							list += cur
 							cur = it
 						}
 
-						is PlainNode.MultiLine -> {
+						is PlainIR.MultiLine -> {
 							list += cur
 							cur = it
 						}
 
-						is PaddingNode.If -> {
+						is PaddingIR.If -> {
 							list += cur
 							cur = it
 						}
 
-						is PaddingNode.IfExp -> {
+						is PaddingIR.IfExp -> {
 							list += cur
 							cur = it
 						}
 
-						is PaddingNode.Block -> {
+						is PaddingIR.Block -> {
 							list += cur
 							cur = it
 						}
 
-						is PaddingNode.BlockList -> {
+						is PaddingIR.BlockList -> {
 							list += cur
 							cur = it
 						}
@@ -395,26 +395,26 @@ private class Cleaner {
 				list += cur
 			}
 		}
-		return multiLineCode(list)
+		return multiLineIR(list)
 	}
 
-	private fun CodeNode.StringConcatenation.clean() = stringConcatenationCode(nodes.map { it.clean() })
+	private fun BackendIR.StringConcatenation.clean() = stringConcatenationIR(nodes.map { it.clean() })
 
-	private fun PlainNode.Plain.clean() = this
+	private fun PlainIR.Plain.clean() = this
 
-	private fun PlainNode.SingleLine.clean() = singleLinePlain(nodes.joinToString("") { it.text })
+	private fun PlainIR.SingleLine.clean() = singleLinePlain(nodes.joinToString("") { it.text })
 
-	private fun PlainNode.MultiLine.clean() = this
+	private fun PlainIR.MultiLine.clean() = this
 
-	private fun PaddingNode.If.clean() = ifPadding(condition.clean(), content.clean(), elseContent.clean())
+	private fun PaddingIR.If.clean() = ifPadding(condition.clean(), content.clean(), elseContent.clean())
 
-	private fun PaddingNode.IfExp.clean() = ifExpPadding(
+	private fun PaddingIR.IfExp.clean() = ifExpPadding(
 		condition.clean(),
 		content.first.clean() to content.second,
 		elseContent.first.clean() to elseContent.second
 	)
 
-	private fun PaddingNode.Block.clean() = blockPadding(nodes.map { it.clean() })
+	private fun PaddingIR.Block.clean() = blockPadding(nodes.map { it.clean() })
 
-	private fun PaddingNode.BlockList.clean() = blockListPadding(nodes.map { it.clean() })
+	private fun PaddingIR.BlockList.clean() = blockListPadding(nodes.map { it.clean() })
 }

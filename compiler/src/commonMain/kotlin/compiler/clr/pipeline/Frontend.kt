@@ -134,7 +134,7 @@ object Frontend : PipelinePhase<ConfigurationPipelineArtifact, ClrFrontendPipeli
 		)
 
 		val countFilesAndLines = if (perfManager == null) null else perfManager::addSourcesStats
-		val outputs = File(input.configuration.get(CLRConfigurationKeys.OUTPUT_DIRECTORY)!!, "Raw Front IR.txt")
+		val outputs = File(input.configuration.get(CLRConfigurationKeys.OUTPUT_DIRECTORY)!!, "FIR@Raw.txt")
 			.printWriter().use { writer ->
 				sessionsWithSources.map { (session, sources) ->
 					val rawFirFiles = session.buildFirViaLightTree(sources, diagnosticsCollector, countFilesAndLines)
@@ -172,7 +172,7 @@ object Frontend : PipelinePhase<ConfigurationPipelineArtifact, ClrFrontendPipeli
 		if (!kotlinPackageUsageIsFine) return null
 
 		val firResult = FirResult(outputs)
-		File(input.configuration.get(CLRConfigurationKeys.OUTPUT_DIRECTORY)!!, "Front IR.txt").printWriter()
+		File(input.configuration.get(CLRConfigurationKeys.OUTPUT_DIRECTORY)!!, "FIR@Resolved.txt").printWriter()
 			.use { writer ->
 				firResult.outputs.forEach { output ->
 					output.fir.forEach { fir ->
@@ -196,7 +196,12 @@ object Frontend : PipelinePhase<ConfigurationPipelineArtifact, ClrFrontendPipeli
 			else -> mutableMapOf()
 		}
 		val manifest = manifestRaw.mapValues { (_, filename) ->
-			Json.decodeFromStream<NodeAssembly>(File(cacheDir, filename).inputStream())
+			runCatching {
+				Json.decodeFromStream<NodeAssembly>(File(cacheDir, filename).inputStream())
+			}.getOrElse {
+				println("exception: cache ${File(cacheDir, filename).absolutePath}")
+				throw it
+			}
 		}
 
 		if (!kfcDir.exists()) kfcDir.mkdir()

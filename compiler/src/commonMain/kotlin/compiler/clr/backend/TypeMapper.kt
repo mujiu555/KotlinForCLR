@@ -19,6 +19,7 @@ package compiler.clr.backend
 import org.jetbrains.kotlin.ir.symbols.UnsafeDuringIrConstructionAPI
 import org.jetbrains.kotlin.ir.types.*
 import org.jetbrains.kotlin.ir.util.fqNameWhenAvailable
+import org.jetbrains.kotlin.ir.util.isFunction
 import org.jetbrains.kotlin.ir.util.isNullable
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.utils.addToStdlib.ifNotEmpty
@@ -31,97 +32,101 @@ enum class TypeStyle {
 	Normal
 }
 
-object TypeMapper {
-	@OptIn(UnsafeDuringIrConstructionAPI::class)
-	fun mapType(type: IrType, typeStyle: TypeStyle): String {
-		if (typeStyle == TypeStyle.ReturnType) {
-			if (type.isUnit() || type.isNothing()) {
-				return "void"
-			}
+@OptIn(UnsafeDuringIrConstructionAPI::class)
+fun IrType.map(typeStyle: TypeStyle): String {
+	if (typeStyle == TypeStyle.ReturnType) {
+		if (isUnit() || isNothing()) {
+			return "void"
 		}
-
-		val classifier = type.classOrNull ?: return "global::System.Object?"
-		val fqName = classifier.owner.fqNameWhenAvailable ?: return "global::System.Object?"
-
-		return mapKotlinToCLRType(type, fqName, typeStyle)
 	}
 
+	val classifier = classOrNull ?: return "global::System.Object?"
+	val fqName = classifier.owner.fqNameWhenAvailable ?: return "global::System.Object?"
 
-	@OptIn(UnsafeDuringIrConstructionAPI::class)
-	fun mapKotlinToCLRType(type: IrType, fqName: FqName, typeStyle: TypeStyle): String {
-		val result = when (fqName.asString()) {
-			"kotlin.Annotation" -> "global::System.Attribute"
-			"kotlin.Any" -> "global::System.Object"
-			"kotlin.Array" -> when (val typeArgument = (type as IrSimpleType).arguments.single()) {
-				is IrStarProjection -> "dynamic"
-				is IrTypeProjection -> mapType(typeArgument.type, TypeStyle.ReturnType) + "[]"
-			}
+	return mapKotlinToCLRType(this, fqName, typeStyle)
+}
 
-			"kotlin.ByteArray" -> "global::System.SByte[]"
-			"kotlin.CharArray" -> "global::System.Char[]"
-			"kotlin.ShortArray" -> "global::System.Int16[]"
-			"kotlin.IntArray" -> "global::System.Int32[]"
-			"kotlin.LongArray" -> "global::System.Int64[]"
-			"kotlin.FloatArray" -> "global::System.Single[]"
-			"kotlin.DoubleArray" -> "global::System.Double[]"
-			"kotlin.BooleanArray" -> "global::System.Boolean[]"
-			"kotlin.Boolean" -> "global::System.Boolean"
-			"kotlin.Char" -> "global::System.Char"
-			"kotlin.CharSequence" -> "global::System.Collections.Generic.IEnumerable<global::System.Char>"
 
-			"kotlin.Comparable" -> "global::System.IComparable"
-			"kotlin.Enum" -> "global::System.Enum"
-//			"kotlin.Nothing" -> "global::System.Void" // System.Void 不可用
-			"kotlin.Number" -> "global::System.Numerics.INumber"
-			"kotlin.Byte" -> "global::System.SByte"
-			"kotlin.Short" -> "global::System.Int16"
-			"kotlin.Int" -> "global::System.Int32"
-			"kotlin.Long" -> "global::System.Int64"
-			"kotlin.Float" -> "global::System.Single"
-			"kotlin.Double" -> "global::System.Double"
-			"kotlin.String" -> "global::System.String"
-			"kotlin.Throwable" -> "global::System.Exception"
+@OptIn(UnsafeDuringIrConstructionAPI::class)
+private fun mapKotlinToCLRType(type: IrType, fqName: FqName, typeStyle: TypeStyle): String {
+	val result = when (fqName.asString()) {
+		"kotlin.Annotation" -> "global::System.Attribute"
+		"kotlin.Any" -> "global::System.Object"
+		"kotlin.Array" -> when (val typeArgument = (type as IrSimpleType).arguments.single()) {
+			is IrStarProjection -> "dynamic"
+			is IrTypeProjection -> typeArgument.type.map(TypeStyle.ReturnType) + "[]"
+		}
 
-			else -> buildString {
-				append(
-					when (fqName.asString()) {
-						"kotlin.collections.Iterable" -> "global::System.Collections.Generic.IEnumerable"
-						"kotlin.collections.MutableIterable" -> "/* TODO: MutableIterable */"
-						"kotlin.collections.Collection" -> "global::System.Collections.Generic.IReadOnlyCollection"
-						"kotlin.collections.MutableCollection" -> "global::System.Collections.Generic.ICollection"
-						"kotlin.collections.List" -> "global::System.Collections.Generic.IReadOnlyList"
-						"kotlin.collections.MutableList" -> "global::System.Collections.Generic.IList"
-						"kotlin.collections.Set" -> "global::System.Collections.Generic.IReadOnlySet"
-						"kotlin.collections.MutableSet" -> "global::System.Collections.Generic.ISet"
-						"kotlin.collections.Map" -> "global::System.Collections.Generic.IReadOnlyDictionary"
-						"kotlin.collections.MutableMap" -> "global::System.Collections.Generic.IDictionary"
-						"kotlin.collections.Iterator" -> "global::kotlin.collections.KotlinIterator"
-						"kotlin.collections.MutableIterator" -> "/* TODO: MutableIterator */"
-						"kotlin.collections.ListIterator" -> "/* TODO: ListIterator */"
-						"kotlin.collections.MutableListIterator" -> "/* TODO: MutableListIterator */"
-						else -> "global::" + fqName.asString()
-					}
-				)
-				if (type is IrSimpleType) {
-					type.arguments.ifNotEmpty {
-						append("<")
-						append(joinToString { mapType(it.typeOrFail, TypeStyle.TypeArgument) })
-						append(">")
-					}
+		"kotlin.ByteArray" -> "sbyte[]"
+		"kotlin.CharArray" -> "char[]"
+		"kotlin.ShortArray" -> "short[]"
+		"kotlin.IntArray" -> "int[]"
+		"kotlin.LongArray" -> "long[]"
+		"kotlin.FloatArray" -> "float[]"
+		"kotlin.DoubleArray" -> "double[]"
+		"kotlin.BooleanArray" -> "bool[]"
+		"kotlin.Boolean" -> "bool"
+		"kotlin.Char" -> "char"
+		"kotlin.CharSequence" -> "global::System.Collections.Generic.IEnumerable<char>"
+
+		"kotlin.Comparable" -> "global::System.IComparable"
+		"kotlin.Enum" -> "global::System.Enum"
+		"kotlin.Number" -> "global::System.Numerics.INumber"
+		"kotlin.Byte" -> "sbyte"
+		"kotlin.Short" -> "short"
+		"kotlin.Int" -> "int"
+		"kotlin.Long" -> "long"
+		"kotlin.Float" -> "float"
+		"kotlin.Double" -> "double"
+		"kotlin.String" -> "string"
+		"kotlin.Throwable" -> "global::System.Exception"
+
+		else if (type.isFunction()) -> buildString {
+			append("global::System.Func")
+			append("<")
+			append((type as IrSimpleType).arguments.joinToString { it.typeOrFail.map(TypeStyle.TypeArgument) })
+			append(">")
+		}
+
+		else -> buildString {
+			append(
+				when (fqName.asString()) {
+					"kotlin.collections.Iterable" -> "global::System.Collections.Generic.IEnumerable"
+					"kotlin.collections.MutableIterable" -> "/* TODO: MutableIterable */"
+					"kotlin.collections.Collection" -> "global::System.Collections.Generic.IReadOnlyCollection"
+					"kotlin.collections.MutableCollection" -> "global::System.Collections.Generic.ICollection"
+					"kotlin.collections.List" -> "global::System.Collections.Generic.IReadOnlyList"
+					"kotlin.collections.MutableList" -> "global::System.Collections.Generic.IList"
+					"kotlin.collections.Set" -> "global::System.Collections.Generic.IReadOnlySet"
+					"kotlin.collections.MutableSet" -> "global::System.Collections.Generic.ISet"
+					"kotlin.collections.Map" -> "global::System.Collections.Generic.IReadOnlyDictionary"
+					"kotlin.collections.MutableMap" -> "global::System.Collections.Generic.IDictionary"
+					"kotlin.collections.Iterator" -> "global::kotlin.collections.KotlinIterator"
+					"kotlin.collections.MutableIterator" -> "/* TODO: MutableIterator */"
+					"kotlin.collections.ListIterator" -> "/* TODO: ListIterator */"
+					"kotlin.collections.MutableListIterator" -> "/* TODO: MutableListIterator */"
+					else -> "global::" + fqName.asString()
+				}
+			)
+			if (type is IrSimpleType) {
+				type.arguments.ifNotEmpty {
+					append("<")
+					append(joinToString { it.typeOrFail.map(TypeStyle.TypeArgument) })
+					append(">")
 				}
 			}
 		}
-		return when {
-			typeStyle == TypeStyle.NoModifier -> result
-			type.isNullable() -> "$result?"
-			else -> when (typeStyle) {
-				TypeStyle.ReturnType,
-				TypeStyle.TypeArgument,
-				TypeStyle.Property,
-					-> result
+	}
+	return when {
+		typeStyle == TypeStyle.NoModifier -> result
+		type.isNullable() -> "$result?"
+		else -> when (typeStyle) {
+			TypeStyle.ReturnType,
+			TypeStyle.TypeArgument,
+			TypeStyle.Property,
+				-> result
 
-				else -> "[global::kotlin.clr.KotlinNotNull] $result"
-			}
+			else -> "[global::kotlin.clr.KotlinNotNull] $result"
 		}
 	}
 }

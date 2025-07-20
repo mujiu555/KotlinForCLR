@@ -75,7 +75,7 @@ object Backend : PipelinePhase<ClrFir2IrPipelineArtifact, ClrBinaryPipelineArtif
 			)
 		}
 
-		File(input.configuration.get(CLRConfigurationKeys.OUTPUT_DIRECTORY)!!, "CLR IR.txt").printWriter()
+		File(input.configuration.get(CLRConfigurationKeys.OUTPUT_DIRECTORY)!!, "KIR@Lowered.txt").printWriter()
 			.use { writer ->
 				codegenInputs.forEach {
 					writer.println(it.module.dump())

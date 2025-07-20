@@ -17,8 +17,8 @@
 package compiler.clr.backend.lower
 
 import compiler.clr.backend.ClrBackendContext
-import compiler.clr.backend.TypeMapper
 import compiler.clr.backend.TypeStyle
+import compiler.clr.backend.map
 import org.jetbrains.kotlin.backend.common.FileLoweringPass
 import org.jetbrains.kotlin.backend.common.IrElementTransformerVoidWithContext
 import org.jetbrains.kotlin.backend.common.phaser.PhaseDescription
@@ -122,8 +122,8 @@ internal class ClrBuiltInsLowering(val context: ClrBackendContext) : FileLowerin
 	private fun IrExpression.coerceIfPossible(toType: IrType): IrExpression? {
 		// TODO maybe UnsafeCoerce could handle types with different, but coercible underlying representations.
 		// See KT-43286 and related tests for details.
-		val fromJvmType = TypeMapper.mapType(type, TypeStyle.Normal)
-		val toJvmType = TypeMapper.mapType(toType, TypeStyle.Normal)
+		val fromJvmType = type.map(TypeStyle.Normal)
+		val toJvmType = toType.map(TypeStyle.Normal)
 		return if (fromJvmType != toJvmType)
 			null
 		else

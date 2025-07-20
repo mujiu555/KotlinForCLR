@@ -16,12 +16,12 @@
 
 namespace kotlin.reflect;
 
-public interface KProperty : KCallable;
-public interface KMutableProperty : KProperty;
+public interface KProperty<out V> : KCallable<V>;
+public interface KMutableProperty<V> : KProperty<V>;
 
-public interface KProperty0 : KProperty;
-public interface KMutableProperty0 : KMutableProperty;
-public interface KProperty1 : KProperty;
-public interface KMutableProperty1 : KMutableProperty;
-public interface KProperty2 : KProperty;
-public interface KMutableProperty2 : KMutableProperty;
+public interface KProperty0<out V> : KProperty<V>;
+public interface KMutableProperty0<V> : KProperty0<V>, KMutableProperty<V>;
+public interface KProperty1<T, out V> : KProperty<V>;
+public interface KMutableProperty1<T, V> : KProperty1<T, V>, KMutableProperty<V>;
+public interface KProperty2<D, E, out V> : KProperty<V>;
+public interface KMutableProperty2<D, E, V> : KProperty2<D, E, V>, KMutableProperty<V>;

@@ -21,13 +21,13 @@ using kotlin.clr;
 
 namespace kotlin.collections;
 
-public interface Iterator<T> {
+public interface KotlinIterator<T> {
 	public bool hasNext();
 	public T next();
 }
 
-public class KotlinIterator<T> : Iterator<T> {
-	public KotlinIterator([KotlinNotNull] IEnumerator<T> enumerator) {
+public class KotlinIteratorWrapper<T> : KotlinIterator<T> {
+	public KotlinIteratorWrapper([KotlinNotNull] IEnumerator<T> enumerator) {
 		this.enumerator = enumerator;
 	}
 	

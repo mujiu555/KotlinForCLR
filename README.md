@@ -28,6 +28,9 @@
 - `stdlib` Kotlin/CLR 编写的标准库, 暂未使用, 作为未来的标准库实现
 
 ## 使用
+
+**如果切换版本, 请清理缓存目录以避免编译错误(~/.kfc/cache)**
+
 1. 前往 [Actions(非稳定版)](https://github.com/Nyayurin/KotlinForCLR/actions) / [Release(稳定版)](https://github.com/Nyayurin/KotlinForCLR/releases) 下载编译器成品(zip/tar)和 `Kotlin-home`
 2. 解压编译器, 进入 bin 目录, 在 bin 目录下打开终端
 3. 运行 compiler 脚本并传递参数
@@ -38,6 +41,15 @@
 8. `-dotnet-version` 选项提供 dotnet 版本(x.y.z)
 9. 完整的命令应该类似 `compiler.bat kotlin/src -d out -kotlin-home home -dotnet-home "C:/Program Files/dotnet" -dotnet-version 9.0.5`
 10. 更多选项请参考 `compiler.clr.CLRCompilerArguments` 和 `org.jetbrains.kotlin.cli.common.arguments.CommonCompilerArguments`
+
+## 输出文件夹
+1. `FIR@Raw.txt` Frontend IR(前端中间表示形式) 未经过处理的原始树
+2. `FIR@Resolved.txt` FIR 经过处理后的树
+3. `KIR@Raw.txt` Kotlin IR 未经过降级的原始树
+4. `KIR@Lowered.txt` KIR 经过降级后的树
+5. `BIR@Raw.xml` Backend IR 未经过清理的树
+6. `BIR@Cleaned.xml` BIR 经过清理的树
+7. `xxx.cs` 编译产物 C# 源文件
 
 ## 开发
 1. 使用 Intellij IDEA 打开本项目, 使用 Rider / Visual Studio 打开 `csharp` 子目录

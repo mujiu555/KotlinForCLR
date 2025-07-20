@@ -17,7 +17,7 @@
 package compiler.clr.backend.lower
 
 import compiler.clr.backend.ClrBackendContext
-import compiler.clr.frontend.FacadeClassSource
+import compiler.clr.frontend.source.FacadeClassSource
 import org.jetbrains.kotlin.backend.common.FileLoweringPass
 import org.jetbrains.kotlin.backend.common.phaser.PhaseDescription
 import org.jetbrains.kotlin.descriptors.ClassKind

@@ -16,76 +16,59 @@
 
 package compiler.clr.frontend
 
-import org.jetbrains.kotlin.fir.resolve.defaultType
 import org.jetbrains.kotlin.fir.symbols.SymbolInternals
-import org.jetbrains.kotlin.fir.symbols.impl.FirTypeParameterSymbol
-import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
-import org.jetbrains.kotlin.fir.types.builder.buildResolvedTypeRef
-import org.jetbrains.kotlin.fir.types.impl.ConeClassLikeTypeImpl
-import org.jetbrains.kotlin.fir.types.impl.ConeTypeParameterTypeImpl
-import org.jetbrains.kotlin.fir.types.toLookupTag
 import org.jetbrains.kotlin.javac.resolve.classId
+import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.StandardClassIds
 
-object TypeResolver {
-	@OptIn(SymbolInternals::class)
-	fun resolveType(
-		namespace: String,
-		name: String,
-		isReturnPosition: Boolean,
-		nullable: Boolean,
-		typeParameters: List<FirTypeParameterSymbol>,
-	): FirResolvedTypeRef {
-		try {
-			val classId = when (namespace) {
-				"System" -> when (name) {
-					"Attribute" -> StandardClassIds.Annotation
-					"Object" -> StandardClassIds.Any
-					"Array" -> StandardClassIds.Array
-					"Void" -> StandardClassIds.Unit
-					"Boolean" -> StandardClassIds.Boolean
-					"Char" -> StandardClassIds.Char
-					"Enum" -> StandardClassIds.Enum
-					"SByte" -> StandardClassIds.Byte
-					"Int16" -> StandardClassIds.Short
-					"Int32" -> StandardClassIds.Int
-					"Int64" -> StandardClassIds.Long
-					"Single" -> StandardClassIds.Float
-					"Double" -> StandardClassIds.Double
-					"String" -> StandardClassIds.String
-					"Exception" -> StandardClassIds.Throwable
-					else -> classId(namespace, name)
-				}
+fun NodeTypeReference.resolve(isReturnPosition: Boolean): ClassId {
+	return resolve(namespace ?: "", name, isReturnPosition)
+}
 
-				"System.Collections.Generic" -> when (name) {
-					"IReadOnlyList" -> StandardClassIds.List
-					"IList" -> StandardClassIds.MutableList
-					"IReadOnlySet" -> StandardClassIds.Set
-					"ISet" -> StandardClassIds.MutableSet
-					"IReadOnlyDictionary" -> StandardClassIds.Map
-					"IDictionary" -> StandardClassIds.MutableMap
-					else -> classId(namespace, name)
-				}
+fun ClassId.resolve(isReturnPosition: Boolean): ClassId =
+	resolve(packageFqName.asString(), shortClassName.asString(), isReturnPosition)
 
+@OptIn(SymbolInternals::class)
+private fun resolve(
+	namespace: String,
+	name: String,
+	isReturnPosition: Boolean,
+): ClassId {
+	runCatching {
+		return when (namespace) {
+			"System" -> when (name) {
+				"Attribute" -> StandardClassIds.Annotation
+				"Object" -> StandardClassIds.Any
+				"Array" -> StandardClassIds.Array
+				"Void" -> StandardClassIds.Unit
+				"Boolean" -> StandardClassIds.Boolean
+				"Char" -> StandardClassIds.Char
+				"Enum" -> StandardClassIds.Enum
+				"SByte" -> StandardClassIds.Byte
+				"Int16" -> StandardClassIds.Short
+				"Int32" -> StandardClassIds.Int
+				"Int64" -> StandardClassIds.Long
+				"Single" -> StandardClassIds.Float
+				"Double" -> StandardClassIds.Double
+				"String" -> StandardClassIds.String
+				"Exception" -> StandardClassIds.Throwable
 				else -> classId(namespace, name)
 			}
 
-			return buildResolvedTypeRef {
-				coneType = ConeClassLikeTypeImpl(
-					classId.toLookupTag(),
-					typeParameters.map { typeParameterSymbol ->
-						typeParameterSymbol.annotations
-						ConeTypeParameterTypeImpl(
-							typeParameterSymbol.toLookupTag(),
-							typeParameterSymbol.defaultType.isMarkedNullable
-						)
-					}.toTypedArray(),
-					nullable
-				)
+			"System.Collections.Generic" -> when (name) {
+				"IReadOnlyList" -> StandardClassIds.List
+				"IList" -> StandardClassIds.MutableList
+				"IReadOnlySet" -> StandardClassIds.Set
+				"ISet" -> StandardClassIds.MutableSet
+				"IReadOnlyDictionary" -> StandardClassIds.Map
+				"IDictionary" -> StandardClassIds.MutableMap
+				else -> classId(namespace, name)
 			}
-		} catch (e: Throwable) {
-			println("exception on $namespace $name $isReturnPosition")
-			throw e
+
+			else -> classId(namespace, name)
 		}
+	}.getOrElse {
+		println("exception on $namespace $name $isReturnPosition")
+		throw it
 	}
 }

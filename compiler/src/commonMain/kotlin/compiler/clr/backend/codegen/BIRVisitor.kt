@@ -16,44 +16,44 @@
 
 package compiler.clr.backend.codegen
 
-fun CodeNode.visit() = Visitor().run { visit(0) }
+fun BackendIR.visit() = Visitor().run { visit(0) }
 
 private class Visitor {
-	fun CodeNode.visit(padding: Int): String = when (this) {
-		is CodeNode.None -> ""
-		is CodeNode.SingleLineList -> visit(padding)
-		is CodeNode.MultiLineList -> visit(padding)
-		is CodeNode.SingleLine -> visit(padding)
-		is CodeNode.MultiLine -> visit(padding)
-		is CodeNode.StringConcatenation -> visit(padding)
-		is PlainNode.Plain -> visit(padding)
-		is PlainNode.SingleLine -> visit(padding)
-		is PlainNode.MultiLine -> visit(padding)
-		is PaddingNode.If -> visit(padding)
-		is PaddingNode.IfExp -> visit(padding)
-		is PaddingNode.Block -> visit(padding)
-		is PaddingNode.BlockList -> visit(padding)
+	fun BackendIR.visit(padding: Int): String = when (this) {
+		is BackendIR.None -> ""
+		is BackendIR.SingleLineList -> visit(padding)
+		is BackendIR.MultiLineList -> visit(padding)
+		is BackendIR.SingleLine -> visit(padding)
+		is BackendIR.MultiLine -> visit(padding)
+		is BackendIR.StringConcatenation -> visit(padding)
+		is PlainIR.Plain -> visit(padding)
+		is PlainIR.SingleLine -> visit(padding)
+		is PlainIR.MultiLine -> visit(padding)
+		is PaddingIR.If -> visit(padding)
+		is PaddingIR.IfExp -> visit(padding)
+		is PaddingIR.Block -> visit(padding)
+		is PaddingIR.BlockList -> visit(padding)
 	}
 
-	private fun CodeNode.SingleLineList.visit(padding: Int) = buildString {
+	private fun BackendIR.SingleLineList.visit(padding: Int) = buildString {
 		append(nodes.joinToString("") { it.visit(padding) })
 	}
 
-	private fun CodeNode.MultiLineList.visit(padding: Int) = buildString {
+	private fun BackendIR.MultiLineList.visit(padding: Int) = buildString {
 		append(nodes.joinToString("\n") { it.visit(padding) })
 	}
 
-	private fun CodeNode.SingleLine.visit(padding: Int) = buildString {
+	private fun BackendIR.SingleLine.visit(padding: Int) = buildString {
 		repeat(padding) { append("    ") }
 		append(nodes.joinToString("") { it.visit(padding) })
 	}
 
-	private fun CodeNode.MultiLine.visit(padding: Int) = nodes.joinToString("\n") {
+	private fun BackendIR.MultiLine.visit(padding: Int) = nodes.joinToString("\n") {
 		buildString {
 			when (it) {
-				is CodeNode.None,
-				is CodeNode.SingleLine,
-				is PaddingNode.Block,
+				is BackendIR.None,
+				is BackendIR.SingleLine,
+				is PaddingIR.Block,
 					-> {
 				}
 
@@ -63,31 +63,31 @@ private class Visitor {
 		}
 	}
 
-	private fun CodeNode.StringConcatenation.visit(padding: Int) = nodes.joinToString("", "$\"", "\"") {
+	private fun BackendIR.StringConcatenation.visit(padding: Int) = nodes.joinToString("", "$\"", "\"") {
 		"{(${it.visit(padding)})}"
 	}
 
-	private fun PlainNode.Plain.visit(padding: Int) = text
+	private fun PlainIR.Plain.visit(padding: Int) = text
 
-	private fun PlainNode.SingleLine.visit(padding: Int) = buildString {
+	private fun PlainIR.SingleLine.visit(padding: Int) = buildString {
 		repeat(padding) { append("    ") }
 		append(nodes.joinToString("") { it.visit(padding) })
 	}
 
-	private fun PlainNode.MultiLine.visit(padding: Int) = nodes.joinToString("\n") {
+	private fun PlainIR.MultiLine.visit(padding: Int) = nodes.joinToString("\n") {
 		buildString {
 			repeat(padding) { append("    ") }
 			append(it.visit(padding))
 		}
 	}
 
-	private fun PaddingNode.If.visit(padding: Int) = buildString {
+	private fun PaddingIR.If.visit(padding: Int) = buildString {
 		repeat(padding) { append("    ") }
 		append("if (")
 		append(condition.visit(padding))
 		appendLine(")")
 		append(content.visit(padding))
-		if (elseContent != noneCode) {
+		if (elseContent != noneIR) {
 			appendLine()
 			repeat(padding) { append("    ") }
 			appendLine("else")
@@ -95,13 +95,13 @@ private class Visitor {
 		}
 	}
 
-	private fun PaddingNode.IfExp.visit(padding: Int) = buildString {
+	private fun PaddingIR.IfExp.visit(padding: Int) = buildString {
 		append("(")
 		append(condition.visit(padding))
 		appendLine(")")
 		repeat(padding + 1) { append("    ") }
 		append("? ")
-		when (content.first is PaddingNode.Block) {
+		when (content.first is PaddingIR.Block) {
 			true -> {
 				append("(")
 				append("(global::System.Func<${content.second}>)")
@@ -122,7 +122,7 @@ private class Visitor {
 		appendLine()
 		repeat(padding + 1) { append("    ") }
 		append(": ")
-		when (elseContent.first is PaddingNode.Block) {
+		when (elseContent.first is PaddingIR.Block) {
 			true -> {
 				append("(")
 				append("(global::System.Func<${elseContent.second}>)")
@@ -141,7 +141,7 @@ private class Visitor {
 		}
 	}
 
-	private fun PaddingNode.Block.visit(padding: Int) = buildString {
+	private fun PaddingIR.Block.visit(padding: Int) = buildString {
 		repeat(padding) { append("    ") }
 		append("{")
 		appendLine()
@@ -151,7 +151,7 @@ private class Visitor {
 		append("}")
 	}
 
-	private fun PaddingNode.BlockList.visit(padding: Int) = buildString {
+	private fun PaddingIR.BlockList.visit(padding: Int) = buildString {
 		append("{")
 		appendLine()
 		append(nodes.joinToString("\n") { it.visit(padding + 1) })

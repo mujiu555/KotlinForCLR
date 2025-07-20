@@ -17,15 +17,15 @@
 package compiler.clr.backend.codegen
 
 import compiler.clr.backend.ClrBackendContext
-import compiler.clr.backend.TypeMapper
 import compiler.clr.backend.TypeStyle
+import compiler.clr.backend.map
 import org.jetbrains.kotlin.DeprecatedForRemovalCompilerApi
 import org.jetbrains.kotlin.descriptors.ClassKind.*
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Modality.*
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.Visibility
-import org.jetbrains.kotlin.fir.lazy.Fir2IrLazySimpleFunction
+import org.jetbrains.kotlin.fir.lazy.AbstractFir2IrLazyFunction
 import org.jetbrains.kotlin.fir.types.classId
 import org.jetbrains.kotlin.fir.types.coneType
 import org.jetbrains.kotlin.ir.IrStatement
@@ -33,7 +33,15 @@ import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.ir.symbols.*
 import org.jetbrains.kotlin.ir.types.IrSimpleType
+import org.jetbrains.kotlin.ir.types.isByte
+import org.jetbrains.kotlin.ir.types.isChar
+import org.jetbrains.kotlin.ir.types.isDouble
+import org.jetbrains.kotlin.ir.types.isFloat
+import org.jetbrains.kotlin.ir.types.isInt
+import org.jetbrains.kotlin.ir.types.isLong
 import org.jetbrains.kotlin.ir.types.isNothing
+import org.jetbrains.kotlin.ir.types.isNumber
+import org.jetbrains.kotlin.ir.types.isShort
 import org.jetbrains.kotlin.ir.types.isUnit
 import org.jetbrains.kotlin.ir.types.typeOrFail
 import org.jetbrains.kotlin.ir.util.*
@@ -48,10 +56,10 @@ fun <T> List<T>.join(separator: T): List<T> = when {
 
 @OptIn(UnsafeDuringIrConstructionAPI::class)
 class ClassCodegen(val context: ClrBackendContext) {
-	fun IrFile.visit(): CodeNode {
+	fun IrFile.visit(): BackendIR {
 		val `package` = packageFqName
 
-		val content = multiLineCode(
+		val content = multiLineIR(
 			*declarations
 				.map { declaration ->
 					when (declaration) {
@@ -64,7 +72,7 @@ class ClassCodegen(val context: ClrBackendContext) {
 						)
 					}
 				}
-				.join(noneCode)
+				.join(noneIR)
 				.toTypedArray()
 		).let {
 			when (it.nodes.size == 1) {
@@ -74,7 +82,7 @@ class ClassCodegen(val context: ClrBackendContext) {
 		}
 
 		return when (!`package`.isRoot) {
-			true -> multiLineCode(
+			true -> multiLineIR(
 				singleLinePlain("namespace $`package`"),
 				blockPadding(content),
 			)
@@ -83,7 +91,7 @@ class ClassCodegen(val context: ClrBackendContext) {
 		}
 	}
 
-	fun IrClass.visit(): CodeNode = when {
+	fun IrClass.visit(): BackendIR = when {
 		isFileClass -> visitFileClass()
 		kind == CLASS -> visitClass()
 		kind == INTERFACE -> visitInterface()
@@ -105,15 +113,15 @@ class ClassCodegen(val context: ClrBackendContext) {
 		)
 	}
 
-	fun IrClass.visitFileClass() = multiLineCode(
+	fun IrClass.visitFileClass() = multiLineIR(
 		singleLinePlain(
 			"[global::kotlin.clr.KotlinFileClass]"
 		),
-		singleLineCode(
+		singleLineIR(
 			visibility.delegate.visit(),
-			plainPlain("static "),
-			plainPlain("class "),
-			plainPlain(name.visit())
+			plainIR("static "),
+			plainIR("class "),
+			plainIR(name.visit())
 		),
 		blockPadding(
 			buildList {
@@ -130,18 +138,18 @@ class ClassCodegen(val context: ClrBackendContext) {
 					.filterNot { it is IrConstructor }
 					.mapNotNull { it.visit() }
 					.forEach { add(it) }
-			}.join(noneCode)
+			}.join(noneIR)
 		),
 	)
 
-	fun IrClass.visitClass() = multiLineCode(
-		singleLineCode(
+	fun IrClass.visitClass() = multiLineIR(
+		singleLineIR(
 			visibility.delegate.visit(),
 			modality.visit(),
-			plainPlain("class "),
-			plainPlain(name.visit()),
-			plainPlain(" : "),
-			plainPlain(superTypes.joinToString(", ") { TypeMapper.mapType(it, TypeStyle.NoModifier) }),
+			plainIR("class "),
+			plainIR(name.visit()),
+			plainIR(" : "),
+			plainIR(superTypes.joinToString(", ") { it.map(TypeStyle.NoModifier) }),
 		),
 		blockPadding(
 			buildList {
@@ -158,20 +166,20 @@ class ClassCodegen(val context: ClrBackendContext) {
 					.filterNot { it is IrConstructor }
 					.mapNotNull { it.visit() }
 					.forEach { add(it) }
-			}.join(noneCode)
+			}.join(noneIR)
 		),
 	)
 
-	fun IrClass.visitInterface() = multiLineCode(
-		singleLineCode(
+	fun IrClass.visitInterface() = multiLineIR(
+		singleLineIR(
 			buildList {
 				add(visibility.delegate.visit())
 				add(modality.visit())
-				add(plainPlain("interface "))
-				add(plainPlain(name.visit()))
+				add(plainIR("interface "))
+				add(plainIR(name.visit()))
 				if (superTypes.isNotEmpty()) {
-					add(plainPlain(" : "))
-					add(plainPlain(superTypes.joinToString(", ") { TypeMapper.mapType(it, TypeStyle.NoModifier) }))
+					add(plainIR(" : "))
+					add(plainIR(superTypes.joinToString(", ") { it.map(TypeStyle.NoModifier) }))
 				}
 			}
 		),
@@ -190,16 +198,16 @@ class ClassCodegen(val context: ClrBackendContext) {
 					.filterNot { it is IrConstructor }
 					.mapNotNull { it.visit() }
 					.forEach { add(it) }
-			}.join(noneCode)
+			}.join(noneIR)
 		),
 	)
 
-	fun IrClass.visitEnumClass() = multiLineCode(
-		singleLineCode(
+	fun IrClass.visitEnumClass() = multiLineIR(
+		singleLineIR(
 			visibility.delegate.visit(),
 			modality.visit(),
-			plainPlain("enum "),
-			plainPlain(name.visit()),
+			plainIR("enum "),
+			plainIR(name.visit()),
 		),
 		blockPadding(
 			buildList {
@@ -216,17 +224,17 @@ class ClassCodegen(val context: ClrBackendContext) {
 					.filterNot { it is IrConstructor }
 					.mapNotNull { it.visit() }
 					.forEach { add(it) }
-			}.join(noneCode)
+			}.join(noneIR)
 		),
 	)
 
-	fun IrClass.visitAnnotationClass() = multiLineCode(
-		singleLineCode(
+	fun IrClass.visitAnnotationClass() = multiLineIR(
+		singleLineIR(
 			visibility.delegate.visit(),
 			modality.visit(),
-			plainPlain("class "),
-			plainPlain(name.visit()),
-			plainPlain(" : global::System.Attribute"),
+			plainIR("class "),
+			plainIR(name.visit()),
+			plainIR(" : global::System.Attribute"),
 		),
 		blockPadding(
 			buildList {
@@ -243,23 +251,23 @@ class ClassCodegen(val context: ClrBackendContext) {
 					.filterNot { it is IrConstructor }
 					.mapNotNull { it.visit() }
 					.forEach { add(it) }
-			}.join(noneCode)
+			}.join(noneIR)
 		),
 	)
 
-	fun IrClass.visitObject() = multiLineCode(
-		singleLineCode(
+	fun IrClass.visitObject() = multiLineIR(
+		singleLineIR(
 			visibility.delegate.visit(),
 			modality.visit(),
-			plainPlain("class "),
-			plainPlain(name.visit()),
-			plainPlain(" : "),
-			plainPlain(superTypes.joinToString(", ") { TypeMapper.mapType(it, TypeStyle.NoModifier) }),
+			plainIR("class "),
+			plainIR(name.visit()),
+			plainIR(" : "),
+			plainIR(superTypes.joinToString(", ") { it.map(TypeStyle.NoModifier) }),
 		),
 		blockPadding(
 			buildList {
 				add(
-					multiLineListCode(
+					multiLineListIR(
 						buildList {
 							if (!defaultType.isNullable()) {
 								add(singleLinePlain("[global::kotlin.clr.KotlinNotNull]"))
@@ -267,9 +275,9 @@ class ClassCodegen(val context: ClrBackendContext) {
 							add(
 								singleLinePlain(
 									"public static ",
-									TypeMapper.mapType(defaultType, TypeStyle.Property),
+									defaultType.map(TypeStyle.Property),
 									" INSTANCE { get; } = new ",
-									TypeMapper.mapType(defaultType, TypeStyle.NoModifier),
+									defaultType.map(TypeStyle.NoModifier),
 									"();",
 								)
 							)
@@ -289,11 +297,11 @@ class ClassCodegen(val context: ClrBackendContext) {
 					.filterNot { it is IrConstructor }
 					.mapNotNull { it.visit() }
 					.forEach { add(it) }
-			}.join(noneCode)
+			}.join(noneIR)
 		),
 	)
 
-	fun IrDeclaration.visit(): CodeNode? {
+	fun IrDeclaration.visit(): BackendIR? {
 		if (isFakeOverride) return null
 		return when (this) {
 			is IrClass -> visit()
@@ -311,24 +319,24 @@ class ClassCodegen(val context: ClrBackendContext) {
 		}
 	}
 
-	fun IrFunction.visit() = multiLineCode(
+	fun IrFunction.visit() = multiLineIR(
 		buildList {
 			when (returnType.isNothing()) {
 				true -> add(
-					singleLineCode(plainPlain("[global::System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]"))
+					singleLineIR(plainIR("[global::System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]"))
 				)
 
 				else -> when {
 					!returnType.isNullable() && !returnType.isUnit() -> add(
-						singleLineCode(plainPlain("[global::kotlin.clr.KotlinNotNull]"))
+						singleLineIR(plainIR("[global::kotlin.clr.KotlinNotNull]"))
 					)
 				}
 			}
 			if (parameters.firstOrNull { it.kind == IrParameterKind.ExtensionReceiver } != null) {
-				add(singleLineCode(plainPlain("[global::kotlin.clr.KotlinExtension]")))
+				add(singleLineIR(plainIR("[global::kotlin.clr.KotlinExtension]")))
 			}
 			add(
-				singleLineCode(
+				singleLineIR(
 					buildList {
 						val isStatic = when {
 							parent is IrFile -> true
@@ -336,25 +344,28 @@ class ClassCodegen(val context: ClrBackendContext) {
 							else -> false
 						}
 
-						val returnType = TypeMapper.mapType(returnType, TypeStyle.ReturnType)
+						val returnType = returnType.map(TypeStyle.ReturnType)
 
 						val parameters = parameters.filter {
 							it.kind == IrParameterKind.Regular || it.kind == IrParameterKind.Context
 						}.map {
-							TypeMapper.mapType(it.type, TypeStyle.Normal) to it.name.visit()
+							it.type.map(TypeStyle.Normal) to it.name.visit()
 						}
 
 						add(visibility.delegate.visit())
 						if (isStatic) {
-							add(plainPlain("static "))
+							add(plainIR("static "))
 						}
-						add(plainPlain("$returnType "))
-						add(plainPlain("${name.visit()}("))
+						if (this@visit is IrSimpleFunction && this@visit.overriddenSymbols.isNotEmpty()) {
+							add(plainIR("override "))
+						}
+						add(plainIR("$returnType "))
+						add(plainIR("${name.visit()}("))
 						this@visit.parameters.firstOrNull { it.kind == IrParameterKind.ExtensionReceiver }?.let {
-							add(plainPlain("${TypeMapper.mapType(it.type, TypeStyle.Normal)} receiver, "))
+							add(plainIR("${it.type.map(TypeStyle.Normal)} receiver, "))
 						}
-						add(plainPlain(parameters.joinToString(", ") { "${it.first} ${it.second}" }))
-						add(plainPlain(")"))
+						add(plainIR(parameters.joinToString(", ") { "${it.first} ${it.second}" }))
+						add(plainIR(")"))
 					}
 				)
 			)
@@ -362,23 +373,23 @@ class ClassCodegen(val context: ClrBackendContext) {
 		}
 	)
 
-	fun IrConstructor.visit() = multiLineCode(
-		singleLineCode(
+	fun IrConstructor.visit() = multiLineIR(
+		singleLineIR(
 			buildList {
 				val className = (parent as? IrClass)?.name?.visit()!!
 
 				val parameters = parameters.filter {
 					it.kind == IrParameterKind.Regular || it.kind == IrParameterKind.Context
 				}.map {
-					TypeMapper.mapType(it.type, TypeStyle.Normal) to it.name.visit()
+					it.type.map(TypeStyle.Normal) to it.name.visit()
 				}
 
 				add(visibility.delegate.visit())
-				add(plainPlain("$className("))
-				add(plainPlain(parameters.joinToString(", ") { "${it.first} ${it.second}" }))
-				add(plainPlain(")"))
+				add(plainIR("$className("))
+				add(plainIR(parameters.joinToString(", ") { "${it.first} ${it.second}" }))
+				add(plainIR(")"))
 				if (body?.statements?.get(0) is IrDelegatingConstructorCall) {
-					add(plainPlain(" : "))
+					add(plainIR(" : "))
 					add((body?.statements?.get(0) as IrDelegatingConstructorCall).visit())
 				}
 			}
@@ -395,10 +406,10 @@ class ClassCodegen(val context: ClrBackendContext) {
 						.filter { it.second != null }
 						.map { it.first to it.second!! }
 						.map { (property, initializer) ->
-							singleLineCode(
-								plainPlain("this.${property.name.visit()}_backingField = "),
-								initializer.visitUsing(),
-								plainPlain(";")
+							singleLineIR(
+								plainIR("this.${property.name.visit()}_backingField = "),
+								initializer.visitNeedReturn(),
+								plainIR(";")
 							)
 						}
 				)
@@ -406,41 +417,41 @@ class ClassCodegen(val context: ClrBackendContext) {
 		),
 	)
 
-	fun IrField.visit() = multiLineCode(
+	fun IrField.visit() = multiLineIR(
 		buildList {
 			if (!type.isNullable()) {
-				add(singleLineCode(plainPlain("[global::kotlin.clr.KotlinNotNull]")))
+				add(singleLineIR(plainIR("[global::kotlin.clr.KotlinNotNull]")))
 			}
 			add(
-				singleLineListCode(
+				singleLineListIR(
 					buildList {
-						add(plainPlain("private "))
+						add(plainIR("private "))
 						if (isStatic) {
-							add(plainPlain("static "))
+							add(plainIR("static "))
 						}
 
-						add(plainPlain(TypeMapper.mapType(type, TypeStyle.Property)))
-						add(plainPlain(" "))
+						add(plainIR(type.map(TypeStyle.Property)))
+						add(plainIR(" "))
 
-						add(plainPlain(name.visit() + "_backingField"))
-						add(plainPlain(";"))
+						add(plainIR(name.visit() + "_backingField"))
+						add(plainIR(";"))
 					}
 				)
 			)
 		}
 	)
 
-	fun IrProperty.visit() = multiLineCode(
+	fun IrProperty.visit() = multiLineIR(
 		buildList {
 			val type = getter?.returnType
 				?: setter?.returnType
 				?: error("Property must have either getter or setter: $this")
 
 			if (!type.isNullable()) {
-				add(singleLineCode(plainPlain("[global::kotlin.clr.KotlinNotNull]")))
+				add(singleLineIR(plainIR("[global::kotlin.clr.KotlinNotNull]")))
 			}
 			add(
-				singleLineCode(
+				singleLineIR(
 					buildList {
 						val isStatic = when {
 							parent is IrFile -> true
@@ -449,7 +460,7 @@ class ClassCodegen(val context: ClrBackendContext) {
 						}
 						add(visibility.delegate.visit())
 						if (isStatic) {
-							add(plainPlain("static "))
+							add(plainIR("static "))
 						}
 						when (modality) {
 							FINAL -> {}
@@ -462,27 +473,33 @@ class ClassCodegen(val context: ClrBackendContext) {
 								)
 							)
 
-							OPEN -> add(plainPlain("virtual "))
-							ABSTRACT -> add(plainPlain("abstract "))
+							OPEN -> add(plainIR("virtual "))
+							ABSTRACT -> add(plainIR("abstract "))
 						}
 
-						add(plainPlain(TypeMapper.mapType(type, TypeStyle.ReturnType)))
-						add(plainPlain(" "))
+						add(plainIR(type.map(TypeStyle.ReturnType)))
+						add(plainIR(" "))
 
-						add(plainPlain(name.visit()))
+						add(plainIR(name.visit()))
 					}
 				)
 			)
 			add(
 				blockPadding(
-					multiLineCode(
+					multiLineIR(
 						buildList {
 							getter?.let { getter ->
-								add(plainPlain("get"))
+								if (getter.visibility.delegate != visibility.delegate) {
+									add(getter.visibility.delegate.visit())
+								}
+								add(plainIR("get"))
 								add(getter.body!!.visit()!!)
 							}
 							setter?.let { setter ->
-								add(plainPlain("set"))
+								if (setter.visibility.delegate != visibility.delegate) {
+									add(setter.visibility.delegate.visit())
+								}
+								add(plainIR("set"))
 								add(setter.body!!.visit()!!)
 							}
 						}
@@ -499,8 +516,8 @@ class ClassCodegen(val context: ClrBackendContext) {
 			.map {
 				when (it) {
 					is IrWhen -> it.visit()
-					is IrExpression -> singleLineCode(it.visit(), plainPlain(";"))
-					is IrVariable -> it.visit().appendSingleLine(plainPlain(";"))
+					is IrExpression -> singleLineIR(it.visit(), plainIR(";"))
+					is IrVariable -> it.visit().appendSingleLine(plainIR(";"))
 					else -> multiLinePlain(
 						"/*",
 						"Unsupported statement: ${it::class.java.simpleName}",
@@ -523,8 +540,8 @@ class ClassCodegen(val context: ClrBackendContext) {
 			.map {
 				when (it) {
 					is IrWhen -> it.visit()
-					is IrExpression -> singleLineCode(it.visit(), plainPlain(";"))
-					is IrVariable -> it.visit().appendSingleLine(plainPlain(";"))
+					is IrExpression -> singleLineIR(it.visit(), plainIR(";"))
+					is IrVariable -> it.visit().appendSingleLine(plainIR(";"))
 					else -> multiLinePlain(
 						"/*",
 						"Unsupported statement: ${it::class.java.simpleName}",
@@ -536,68 +553,68 @@ class ClassCodegen(val context: ClrBackendContext) {
 			.let {
 				when (it.isEmpty()) {
 					true -> null
-					else -> multiLineCode(it)
+					else -> multiLineIR(it)
 				}
 			}
 	}
 
-	fun IrDelegatingConstructorCall.visit() = singleLineListCode(
-		plainPlain("base("),
+	fun IrDelegatingConstructorCall.visit() = singleLineListIR(
+		plainIR("base("),
 		*valueArguments
 			.filterNotNull()
-			.map { it.visitUsing() }
-			.join(plainPlain(", "))
+			.map { it.visitNeedReturn() }
+			.join(plainIR(", "))
 			.toTypedArray(),
-		plainPlain(")"),
+		plainIR(")"),
 	)
 
-	fun IrGetObjectValue.visit() = singleLineListCode(
-		plainPlain(TypeMapper.mapType(symbol.owner.defaultType, TypeStyle.NoModifier)),
-		plainPlain(".INSTANCE"),
+	fun IrGetObjectValue.visit() = singleLineListIR(
+		plainIR(symbol.owner.defaultType.map(TypeStyle.NoModifier)),
+		plainIR(".INSTANCE"),
 	)
 
-	fun IrConstructorCall.visit(): CodeNode = singleLineListCode(
+	fun IrConstructorCall.visit(): BackendIR = singleLineListIR(
 		buildList {
 			val constructedClass = symbol.owner.parent as IrClass
-			add(plainPlain("new "))
-			add(plainPlain(TypeMapper.mapType(constructedClass.defaultType, TypeStyle.NoModifier)))
-			add(plainPlain("("))
+			add(plainIR("new "))
+			add(plainIR(constructedClass.defaultType.map(TypeStyle.NoModifier)))
+			add(plainIR("("))
 			valueArguments
 				.filterNotNull()
-				.map { it.visitUsing() }
-				.join(plainPlain(", "))
+				.map { it.visitNeedReturn() }
+				.join(plainIR(", "))
 				.forEach { add(it) }
-			add(plainPlain(")"))
+			add(plainIR(")"))
 		}
 	)
 
-	fun IrCall.visitClassParent(): CodeNode {
+	fun IrCall.visitClassParent(): BackendIR {
 		val function = symbol.owner
 		val parent = function.parent as IrClass
 
 		val isStatic = function.isStatic
-		val isCompanionStatic = (function as? Fir2IrLazySimpleFunction)?.fir?.annotations?.any {
+		val isCompanionStatic = (function as? AbstractFir2IrLazyFunction<*>)?.fir?.annotations?.any {
 			it.annotationTypeRef.coneType.classId == classId("kotlin.clr", "ClrStatic")
 		} == true
 
 		return when {
-			isStatic -> singleLineListCode(
+			isStatic -> singleLineListIR(
 				buildList {
-					add(plainPlain(TypeMapper.mapType(parent.defaultType, TypeStyle.NoModifier)))
-					add(plainPlain("."))
+					add(plainIR(parent.defaultType.map(TypeStyle.NoModifier)))
+					add(plainIR("."))
 					when (function.name.isSpecial) {
 						true -> {
 							val name = function.name.visit()
 
 							when {
 								name.startsWith("<set-") -> {
-									add(plainPlain(name.substring("<set-".length, name.length - 1)))
-									add(plainPlain(" = "))
-									add(valueArguments[0]!!.visitUsing())
+									add(plainIR(name.substring("<set-".length, name.length - 1)))
+									add(plainIR(" = "))
+									add(valueArguments[0]!!.visitNeedReturn())
 								}
 
 								name.startsWith("<get-") -> {
-									add(plainPlain(name.substring("<get-".length, name.length - 1)))
+									add(plainIR(name.substring("<get-".length, name.length - 1)))
 								}
 
 								else -> add(
@@ -614,38 +631,37 @@ class ClassCodegen(val context: ClrBackendContext) {
 						}
 
 						else -> {
-							add(plainPlain(function.name.visit()))
+							add(plainIR(function.name.visit()))
 							if (typeArguments.isNotEmpty()) {
-								add(plainPlain("<"))
+								add(plainIR("<"))
 								add(
-									singleLineListCode(
+									singleLineListIR(
 										typeArguments.map {
-											it?.let { TypeMapper.mapType(it, TypeStyle.TypeArgument) }
-												?: "global::System.Object"
+											it?.map(TypeStyle.TypeArgument) ?: "global::System.Object"
 										}.map {
-											plainPlain(it)
+											plainIR(it)
 										}
 									)
 								)
-								add(plainPlain(">"))
+								add(plainIR(">"))
 							}
-							add(plainPlain("("))
+							add(plainIR("("))
 							listOfNotNull(
 								arguments.getOrNull(symbol.owner.parameters.indexOfFirst {
 									it.kind == IrParameterKind.ExtensionReceiver
 								}),
 								*valueArguments.toTypedArray()
 							)
-								.map { it.visitUsing() }
-								.join(plainPlain(", "))
+								.map { it.visitNeedReturn() }
+								.join(plainIR(", "))
 								.forEach { add(it) }
-							add(plainPlain(")"))
+							add(plainIR(")"))
 						}
 					}
 				}
 			)
 
-			isCompanionStatic -> singleLineListCode(
+			isCompanionStatic -> singleLineListIR(
 				buildList {
 					val outer = parent.parent as? IrClass ?: return multiLinePlain(
 						"/*",
@@ -654,20 +670,20 @@ class ClassCodegen(val context: ClrBackendContext) {
 						"is companion static",
 						"*/",
 					)
-					add(plainPlain(TypeMapper.mapType(outer.defaultType, TypeStyle.NoModifier)))
-					add(plainPlain("."))
+					add(plainIR(outer.defaultType.map(TypeStyle.NoModifier)))
+					add(plainIR("."))
 					when (function.name.isSpecial) {
 						true -> {
 							val name = function.name.visit()
 							when {
 								name.startsWith("<set-") -> {
-									add(plainPlain(name.substring("<set-".length, name.length - 1)))
-									add(plainPlain(" = "))
-									add(valueArguments[0]!!.visitUsing())
+									add(plainIR(name.substring("<set-".length, name.length - 1)))
+									add(plainIR(" = "))
+									add(valueArguments[0]!!.visitNeedReturn())
 								}
 
 								name.startsWith("<get-") -> {
-									add(plainPlain(name.substring("<get-".length, name.length - 1)))
+									add(plainIR(name.substring("<get-".length, name.length - 1)))
 								}
 
 								else -> add(
@@ -684,32 +700,31 @@ class ClassCodegen(val context: ClrBackendContext) {
 						}
 
 						else -> {
-							add(plainPlain(function.name.visit()))
+							add(plainIR(function.name.visit()))
 							if (typeArguments.isNotEmpty()) {
-								add(plainPlain("<"))
+								add(plainIR("<"))
 								add(
-									singleLineListCode(
+									singleLineListIR(
 										typeArguments.map {
-											it?.let { TypeMapper.mapType(it, TypeStyle.TypeArgument) }
-												?: "global::System.Object"
+											it?.map(TypeStyle.TypeArgument) ?: "global::System.Object"
 										}.map {
-											plainPlain(it)
+											plainIR(it)
 										}
 									)
 								)
-								add(plainPlain(">"))
+								add(plainIR(">"))
 							}
-							add(plainPlain("("))
+							add(plainIR("("))
 							listOfNotNull(
 								arguments.getOrNull(symbol.owner.parameters.indexOfFirst {
 									it.kind == IrParameterKind.ExtensionReceiver
 								}),
 								*valueArguments.toTypedArray()
 							)
-								.map { it.visitUsing() }
-								.join(plainPlain(", "))
+								.map { it.visitNeedReturn() }
+								.join(plainIR(", "))
 								.forEach { add(it) }
-							add(plainPlain(")"))
+							add(plainIR(")"))
 						}
 					}
 				}
@@ -717,85 +732,172 @@ class ClassCodegen(val context: ClrBackendContext) {
 
 			else -> when {
 				function.isOperator -> when (function.name.visit()) {
-					"plus" -> singleLineListCode(
-						plainPlain("("),
-						arguments[0]!!.visitUsing(),
-						plainPlain(")"),
-						plainPlain(" + "),
-						plainPlain("("),
-						arguments[1]!!.visitUsing(),
-						plainPlain(")"),
+					"plus" -> singleLineListIR(
+						plainIR("("),
+						arguments[0]!!.visitNeedReturn(),
+						plainIR(")"),
+						plainIR(" + "),
+						plainIR("("),
+						arguments[1]!!.visitNeedReturn(),
+						plainIR(")"),
 					)
 
-					"times" -> singleLineListCode(
-						plainPlain("("),
-						arguments[0]!!.visitUsing(),
-						plainPlain(")"),
-						plainPlain(" * "),
-						plainPlain("("),
-						arguments[1]!!.visitUsing(),
-						plainPlain(")"),
+					"minus" -> singleLineListIR(
+						plainIR("("),
+						arguments[0]!!.visitNeedReturn(),
+						plainIR(")"),
+						plainIR(" - "),
+						plainIR("("),
+						arguments[1]!!.visitNeedReturn(),
+						plainIR(")"),
 					)
 
-					"iterator" -> singleLineListCode(
-						plainPlain("new global::kotlin.collections.KotlinIterator<"),
+					"times" -> singleLineListIR(
+						plainIR("("),
+						arguments[0]!!.visitNeedReturn(),
+						plainIR(")"),
+						plainIR(" * "),
+						plainIR("("),
+						arguments[1]!!.visitNeedReturn(),
+						plainIR(")"),
+					)
+
+					"div" -> singleLineListIR(
+						plainIR("("),
+						arguments[0]!!.visitNeedReturn(),
+						plainIR(")"),
+						plainIR(" / "),
+						plainIR("("),
+						arguments[1]!!.visitNeedReturn(),
+						plainIR(")"),
+					)
+
+					"rem" -> singleLineListIR(
+						plainIR("("),
+						arguments[0]!!.visitNeedReturn(),
+						plainIR(")"),
+						plainIR(" % "),
+						plainIR("("),
+						arguments[1]!!.visitNeedReturn(),
+						plainIR(")"),
+					)
+
+					"plusAssign" -> singleLineListIR(
+						plainIR("("),
+						dispatchReceiver!!.visitNeedReturn(),
+						plainIR(")"),
+						plainIR(" += "),
+						plainIR("("),
+						valueArguments.single()!!.visitNeedReturn(),
+						plainIR(")"),
+					)
+
+					"minusAssign" -> singleLineListIR(
+						plainIR("("),
+						dispatchReceiver!!.visitNeedReturn(),
+						plainIR(")"),
+						plainIR(" -= "),
+						plainIR("("),
+						valueArguments.single()!!.visitNeedReturn(),
+						plainIR(")"),
+					)
+
+					"inc" -> singleLineListIR(
+						plainIR("("),
+						dispatchReceiver!!.visitNeedReturn(),
+						plainIR(")"),
+						plainIR("++"),
+					)
+
+					"dec" -> singleLineListIR(
+						plainIR("("),
+						dispatchReceiver!!.visitNeedReturn(),
+						plainIR(")"),
+						plainIR("--"),
+					)
+
+					"invoke" -> singleLineListIR(
+						plainIR("("),
+						dispatchReceiver!!.visitNeedReturn(),
+						plainIR(")"),
+						plainIR(".Invoke"),
+						plainIR("("),
+						*valueArguments
+							.filterNotNull()
+							.map { it.visit() }
+							.join(plainIR(", "))
+							.toTypedArray(),
+						plainIR(")"),
+					)
+
+					"iterator" -> singleLineListIR(
+						plainIR("new global::kotlin.collections.KotlinIteratorWrapper"),
+						plainIR("<"),
 						dispatchReceiver!!.type.let {
 							it as IrSimpleType
-							plainPlain(TypeMapper.mapType(it.arguments.single().typeOrFail, TypeStyle.TypeArgument))
+							plainIR(it.arguments.single().typeOrFail.map(TypeStyle.TypeArgument))
 						},
-						plainPlain(">("),
-						singleLineListCode(
+						plainIR(">"),
+						plainIR("("),
+						singleLineListIR(
+							plainIR("("),
 							dispatchReceiver!!.visit(),
-							plainPlain(".GetEnumerator()")
+							plainIR(")"),
+							plainIR(".GetEnumerator()")
 						),
-						plainPlain(")")
+						plainIR(")"),
 					)
 
-					"hasNext" -> singleLineListCode(
+					"hasNext" -> singleLineListIR(
+						plainIR("("),
 						dispatchReceiver!!.visit(),
-						plainPlain("."),
-						plainPlain(function.name.visit()),
-						plainPlain("("),
+						plainIR(")"),
+						plainIR("."),
+						plainIR(function.name.visit()),
+						plainIR("("),
 						*valueArguments
 							.filterNotNull()
-							.map { it.visitUsing() }
-							.join(plainPlain(", "))
+							.map { it.visitNeedReturn() }
+							.join(plainIR(", "))
 							.toTypedArray(),
-						plainPlain(")")
+						plainIR(")"),
 					)
 
-					"next" -> singleLineListCode(
+					"next" -> singleLineListIR(
+						plainIR("("),
 						dispatchReceiver!!.visit(),
-						plainPlain("."),
-						plainPlain(function.name.visit()),
-						plainPlain("("),
+						plainIR(")"),
+						plainIR("."),
+						plainIR(function.name.visit()),
+						plainIR("("),
 						*valueArguments
 							.filterNotNull()
-							.map { it.visitUsing() }
-							.join(plainPlain(", "))
+							.map { it.visitNeedReturn() }
+							.join(plainIR(", "))
 							.toTypedArray(),
-						plainPlain(")")
+						plainIR(")"),
 					)
 
-					"not" -> singleLineListCode(
-						plainPlain("!("),
+					"not" -> singleLineListIR(
+						plainIR("!"),
+						plainIR("("),
 						dispatchReceiver!!.visit(),
-						plainPlain(")")
+						plainIR(")"),
 					)
 
 					else -> {
 						val name = function.name.visit()
 						when {
 							name.startsWith("<set-") -> {
-								multiLineCode(
-									plainPlain(name.substring("<set-".length, name.length - 1)),
-									plainPlain(" = "),
-									valueArguments[0]!!.visitUsing()
+								multiLineIR(
+									plainIR(name.substring("<set-".length, name.length - 1)),
+									plainIR(" = "),
+									valueArguments[0]!!.visitNeedReturn()
 								)
 							}
 
 							name.startsWith("<get-") -> {
-								plainPlain(name.substring("<get-".length, name.length - 1))
+								plainIR(name.substring("<get-".length, name.length - 1))
 							}
 
 							else -> multiLinePlain(
@@ -809,96 +911,154 @@ class ClassCodegen(val context: ClrBackendContext) {
 					}
 				}
 
-				else -> singleLineListCode(
-					buildList {
-						add(dispatchReceiver!!.visit())
-						add(plainPlain("."))
-						when (function.name.isSpecial) {
-							true -> {
-								val name = function.name.visit()
-								when {
-									name.startsWith("<set-") -> {
-										add(plainPlain(name.substring("<set-".length, name.length - 1)))
-										add(plainPlain(" = "))
-										add(valueArguments[0]!!.visitUsing())
-									}
-
-									name.startsWith("<get-") -> {
-										add(plainPlain(name.substring("<get-".length, name.length - 1)))
-									}
-
-									else -> add(
-										multiLinePlain(
-											"/*",
-											"Unsupported name: $name",
-											"at IrCall.visitClassParent: ${this@visitClassParent}",
-											"is special",
-											"*/",
-										)
-									)
-								}
+				else -> when {
+					dispatchReceiver?.type?.run {
+						isByte() || isChar() || isShort() || isInt() || isLong() || isFloat() || isDouble()
+					} == true && function.name.asString() in listOf(
+						"toByte", "toChar", "toShort", "toInt", "toLong", "toFloat", "toDouble"
+					) -> singleLineListIR(
+						plainIR("("),
+						plainIR(
+							when (function.name.asString()) {
+								"toByte" -> "sbyte"
+								"toChar" -> "char"
+								"toShort" -> "short"
+								"toInt" -> "int"
+								"toLong" -> "long"
+								"toFloat" -> "float"
+								"toDouble" -> "double"
+								else -> error(function.name.asString())
 							}
+						),
+						plainIR(")"),
+						plainIR("("),
+						dispatchReceiver!!.visit(),
+						plainIR(")"),
+					)
 
-							else -> {
-								add(plainPlain(function.name.visit().let {
-									when (it) {
-										"equals" -> "Equals"
-										else -> it
-									}
-								}))
-								if (typeArguments.isNotEmpty()) {
-									add(plainPlain("<"))
-									add(
-										singleLineListCode(
-											typeArguments.map {
-												it?.let { TypeMapper.mapType(it, TypeStyle.TypeArgument) }
-													?: "global::System.Object"
-											}.map {
-												plainPlain(it)
-											}
+					dispatchReceiver != null -> singleLineListIR(
+						buildList {
+							add(plainIR("("))
+							add(dispatchReceiver!!.visit())
+							add(plainIR(")"))
+							add(plainIR("."))
+							when (function.name.isSpecial) {
+								true -> {
+									val name = function.name.visit()
+									when {
+										name.startsWith("<set-") -> {
+											add(plainIR(name.substring("<set-".length, name.length - 1)))
+											add(plainIR(" = "))
+											add(valueArguments[0]!!.visitNeedReturn())
+										}
+
+										name.startsWith("<get-") -> {
+											add(plainIR(name.substring("<get-".length, name.length - 1)))
+										}
+
+										else -> add(
+											multiLinePlain(
+												"/*",
+												"Unsupported name: $name",
+												"at IrCall.visitClassParent: ${this@visitClassParent}",
+												"is special",
+												"*/",
+											)
 										)
-									)
-									add(plainPlain(">"))
+									}
 								}
-								add(plainPlain("("))
-								listOfNotNull(
-									arguments.getOrNull(symbol.owner.parameters.indexOfFirst {
-										it.kind == IrParameterKind.ExtensionReceiver
-									}),
-									*valueArguments.toTypedArray()
-								)
-									.map { it.visitUsing() }
-									.join(plainPlain(", "))
-									.forEach { add(it) }
-								add(plainPlain(")"))
+
+								else -> {
+									add(plainIR(function.name.visit().let {
+										when (it) {
+											"equals" -> "Equals"
+											else -> it
+										}
+									}))
+									if (typeArguments.isNotEmpty()) {
+										add(plainIR("<"))
+										add(
+											singleLineListIR(
+												typeArguments.map {
+													it?.map(TypeStyle.TypeArgument) ?: "global::System.Object"
+												}.map {
+													plainIR(it)
+												}
+											)
+										)
+										add(plainIR(">"))
+									}
+									add(plainIR("("))
+									listOfNotNull(
+										arguments.getOrNull(symbol.owner.parameters.indexOfFirst {
+											it.kind == IrParameterKind.ExtensionReceiver
+										}),
+										*valueArguments.toTypedArray()
+									)
+										.map { it.visitNeedReturn() }
+										.join(plainIR(", "))
+										.forEach { add(it) }
+									add(plainIR(")"))
+								}
 							}
 						}
-					}
-				)
+					)
+
+					else -> multiLinePlain(
+						"/*",
+						"Unsupported dispatchReceiver: null",
+						"at IrCall.visitClassParent: $this",
+						"*/",
+					)
+				}
 			}
 		}
 	}
 
-	fun IrCall.visitExternalPackageFragmentParent(): CodeNode {
+	fun IrCall.visitExternalPackageFragmentParent(): BackendIR {
 		val function = symbol.owner
 		val parent = function.parent as IrExternalPackageFragment
 
 		return when (parent.packageFqName.visit()) {
 			"kotlin.internal.ir" -> when (function.name.visit()) {
-				"greater" -> singleLineListCode(
-					plainPlain("("),
-					valueArguments[0]!!.visitUsing(),
-					plainPlain(")"),
-					plainPlain(" > "),
-					plainPlain("("),
-					valueArguments[1]!!.visitUsing(),
-					plainPlain(")"),
+				"greater" -> singleLineListIR(
+					plainIR("("),
+					valueArguments[0]!!.visitNeedReturn(),
+					plainIR(")"),
+					plainIR(" > "),
+					plainIR("("),
+					valueArguments[1]!!.visitNeedReturn(),
+					plainIR(")"),
 				)
 
-				"EQEQ" -> singleLineListCode(
-					valueArguments[0]!!.visitUsing(),
-					plainPlain(" == "),
-					valueArguments[1]!!.visitUsing()
+				"less" -> singleLineListIR(
+					plainIR("("),
+					valueArguments[0]!!.visitNeedReturn(),
+					plainIR(")"),
+					plainIR(" < "),
+					plainIR("("),
+					valueArguments[1]!!.visitNeedReturn(),
+					plainIR(")"),
+				)
+
+				"EQEQ" -> singleLineListIR(
+					plainIR("("),
+					valueArguments[0]!!.visitNeedReturn(),
+					plainIR(")"),
+					plainIR(" == "),
+					plainIR("("),
+					valueArguments[1]!!.visitNeedReturn(),
+					plainIR(")"),
+				)
+
+				"CHECK_NOT_NULL" -> singleLineListIR(
+					plainIR("global::kotlin.clr.NotNullAssertion.notNull"),
+					plainIR("<"),
+					plainIR(type.map(TypeStyle.TypeArgument)),
+					plainIR(">"),
+					plainIR("("),
+					valueArguments.single()!!.visitNeedReturn(),
+					plainIR(")"),
 				)
 
 				else -> multiLinePlain(
@@ -918,7 +1078,7 @@ class ClassCodegen(val context: ClrBackendContext) {
 		}
 	}
 
-	fun IrCall.visit(): CodeNode {
+	fun IrCall.visit(): BackendIR {
 		val function = symbol.owner
 		val parent = function.parent
 
@@ -934,92 +1094,157 @@ class ClassCodegen(val context: ClrBackendContext) {
 		}
 	}
 
-	fun IrTypeOperatorCall.visit(): CodeNode = argument.visit()
+	fun IrTypeOperatorCall.visit(): BackendIR = argument.visit()
 
-	fun IrReturn.visit(): CodeNode = singleLineListCode(
-		plainPlain("return "),
-		value.visitUsing(),
+	fun IrFunctionExpression.visit(): BackendIR = multiLineListIR(
+		singleLineListIR(
+			plainIR("("),
+			*function.parameters
+				.filter { it.kind == IrParameterKind.Regular || it.kind == IrParameterKind.Context }
+				.map { plainIR(it.name.map()) }
+				.join(plainIR(", "))
+				.toTypedArray(),
+			plainIR(") =>")
+		),
+		function.body!!.visit()!!
 	)
 
-	fun IrVariable.visit(): CodeNode = singleLineCode(
+	fun IrReturn.visit(): BackendIR = singleLineListIR(
 		buildList {
-			add(plainPlain(TypeMapper.mapType(type, TypeStyle.ReturnType)))
-			add(plainPlain(" "))
-			add(plainPlain(name.visit()))
+			add(plainIR("return"))
+			(returnTargetSymbol.owner as? IrFunction).let { function ->
+				when (function?.returnType?.isUnit()) {
+					true -> {}
+					else -> {
+						add(plainIR(" "))
+						add(value.visitNeedReturn())
+					}
+				}
+			}
+		}
+	)
+
+	fun IrVariable.visit(): BackendIR = singleLineIR(
+		buildList {
+			add(plainIR(type.map(TypeStyle.ReturnType)))
+			add(plainIR(" "))
+			add(plainIR(name.visit()))
 			initializer?.let {
-				add(plainPlain(" = "))
-				add(it.visitUsing())
+				add(plainIR(" = "))
+				add(it.visitNeedReturn())
 			}
 		},
 	)
 
-	fun IrSetValue.visit(): CodeNode = singleLineListCode(
+	fun IrSetValue.visit(): BackendIR = singleLineListIR(
 		symbol.visit(),
-		plainPlain(" = "),
-		value.visitUsing(),
+		plainIR(" = "),
+		value.visitNeedReturn(),
 	)
 
 	fun IrWhen.visit() = branches.visit()
 
-	fun IrWhen.visitUsing() = branches.visitUsing(TypeMapper.mapType(type, TypeStyle.ReturnType))
+	fun IrWhen.visitNeedReturn() = branches.visitNeedReturn(type.map(TypeStyle.ReturnType))
 
-	fun List<IrBranch>.visit(): CodeNode {
+	fun List<IrBranch>.visit(): BackendIR {
 		val car = first()
 		val cdr = drop(1)
 		return ifPadding(
-			condition = car.condition.visit(),
-			content = car.result.visit().toPadding(),
+			condition = car.condition.visitNeedReturn(),
+			content = car.result.let {
+				when (it is IrBlock) {
+					true -> it.visitNeedReturn().toPadding()
+					else -> singleLineIR(it.visitNeedReturn(), plainIR(";"))
+				}
+			},
 			elseContent = when (cdr.size) {
-				1 -> cdr.single().result.visit()
-				else -> cdr.visit()
-			}.toPadding()
-		)
-	}
-
-	fun List<IrBranch>.visitUsing(type: String): CodeNode {
-		val car = first()
-		val cdr = drop(1)
-		return ifExpPadding(
-			condition = car.condition.visitUsing(),
-			content = when (val content = car.result) {
-				is IrBlock -> content.visitUsing().let { node ->
-					node as PaddingNode.Block
-					blockListPadding(
-						*node.nodes.dropLast(1).toTypedArray(),
-						node.nodes.last().pushSingleLine(plainPlain("return ")),
-					)
+				0 -> noneIR
+				1 -> cdr.single().result.let {
+					when (it is IrBlock) {
+						true -> it.visit().toPadding()
+						else -> singleLineIR(it.visit(), plainIR(";"))
+					}
 				}
 
-				else -> content.visitUsing()
-			} to type,
-			elseContent = when (cdr.size) {
-				1 -> when (val content = cdr.single().result) {
-					is IrBlock -> content.visitUsing().let { node ->
-						node as PaddingNode.Block
-						blockListPadding(
-							*node.nodes.dropLast(1).toTypedArray(),
-							node.nodes.last().pushSingleLine(plainPlain("return ")),
-						)
-					}
-
-					else -> content.visitUsing()
-				} to type
-
-				else -> cdr.visitUsing(type) to type
+				else -> singleLineIR(cdr.visit(), plainIR(";"))
 			}
 		)
 	}
 
-	fun IrBlock.visit() = blockListPadding(statements.mapNotNull { it.visit() })
+	fun List<IrBranch>.visitNeedReturn(type: String): BackendIR {
+		val car = first()
+		val cdr = drop(1)
+		return ifExpPadding(
+			condition = car.condition.visitNeedReturn(),
+			content = when (val content = car.result) {
+				is IrBlock -> content.visitNeedReturn().let { node ->
+					node as PaddingIR.Block
+					blockListPadding(
+						*node.nodes.dropLast(1).toTypedArray(),
+						node.nodes.last().pushSingleLine(plainIR("return ")),
+					)
+				}
 
-	fun IrVararg.visit() = singleLineListCode(elements.map { it.visit() }.join(plainPlain(", ")))
+				else -> content.visitNeedReturn()
+			} to type,
+			elseContent = when (cdr.size) {
+				1 -> when (val content = cdr.single().result) {
+					is IrBlock -> content.visitNeedReturn().let { node ->
+						node as PaddingIR.Block
+						blockListPadding(
+							*node.nodes.dropLast(1).toTypedArray(),
+							node.nodes.last().pushSingleLine(plainIR("return ")),
+						)
+					}
 
-	fun IrWhileLoop.visit(): CodeNode = multiLineListCode(
-		singleLineListCode(plainPlain("while ("), condition.visit(), plainPlain(")")),
-		multiLineCode(body?.visit() ?: blockListPadding())
+					else -> content.visitNeedReturn()
+				} to type
+
+				else -> cdr.visitNeedReturn(type) to type
+			}
+		)
+	}
+
+	fun IrBlock.visit() = when (origin) {
+		IrStatementOrigin.PREFIX_INCR -> singleLineListIR(
+			plainIR("++"),
+			plainIR("("),
+			(statements[0] as IrVariable).initializer!!.visitNeedReturn(),
+			plainIR(")"),
+		)
+
+		IrStatementOrigin.POSTFIX_INCR -> singleLineListIR(
+			plainIR("("),
+			(statements[0] as IrVariable).initializer!!.visitNeedReturn(),
+			plainIR(")"),
+			plainIR("++"),
+		)
+
+		IrStatementOrigin.PREFIX_DECR -> singleLineListIR(
+			plainIR("--"),
+			plainIR("("),
+			(statements[0] as IrVariable).initializer!!.visitNeedReturn(),
+			plainIR(")"),
+		)
+
+		IrStatementOrigin.POSTFIX_DECR -> singleLineListIR(
+			plainIR("("),
+			(statements[0] as IrVariable).initializer!!.visitNeedReturn(),
+			plainIR(")"),
+			plainIR("--"),
+		)
+
+		else -> blockListPadding(statements.mapNotNull { it.visit() })
+	}
+
+	fun IrVararg.visit() = singleLineListIR(elements.map { it.visit() }.join(plainIR(", ")))
+
+	fun IrWhileLoop.visit(): BackendIR = multiLineListIR(
+		singleLineListIR(plainIR("while ("), condition.visit(), plainIR(")")),
+		multiLineIR(body?.visit() ?: blockListPadding())
 	)
 
-	fun IrVarargElement.visit(): CodeNode = when (this) {
+	fun IrVarargElement.visit(): BackendIR = when (this) {
 		is IrExpression -> visit()
 		else -> multiLinePlain(
 			"/*",
@@ -1029,10 +1254,10 @@ class ClassCodegen(val context: ClrBackendContext) {
 		)
 	}
 
-	fun IrStatement.visit(): CodeNode? = when (this) {
+	fun IrStatement.visit(): BackendIR? = when (this) {
 		is IrWhen -> visit()
-		is IrExpression -> singleLineCode(visit(), plainPlain(";"))
-		is IrDeclaration -> visit()?.appendSingleLine(plainPlain(";"))
+		is IrExpression -> singleLineIR(visit(), plainIR(";"))
+		is IrDeclaration -> visit()?.appendSingleLine(plainIR(";"))
 		else -> multiLinePlain(
 			"/*",
 			"Unsupported statement: ${this::class.java.simpleName}",
@@ -1041,7 +1266,7 @@ class ClassCodegen(val context: ClrBackendContext) {
 		)
 	}
 
-	fun IrExpression.visit() = when (this) {
+	fun IrExpression.visit(): BackendIR = when (this) {
 		is IrConst -> visit()
 		is IrCall -> visit()
 		is IrStringConcatenation -> visit()
@@ -1057,6 +1282,7 @@ class ClassCodegen(val context: ClrBackendContext) {
 		is IrGetField -> visit()
 		is IrSetField -> visit()
 		is IrTypeOperatorCall -> visit()
+		is IrFunctionExpression -> visit()
 		else -> multiLinePlain(
 			"/*",
 			"Unsupported expression: ${this::class.java.simpleName}",
@@ -1066,17 +1292,17 @@ class ClassCodegen(val context: ClrBackendContext) {
 	}
 
 	// Using return type
-	fun IrExpression.visitUsing() = when (this) {
-		is IrWhen -> visitUsing()
+	fun IrExpression.visitNeedReturn() = when (this) {
+		is IrWhen -> visitNeedReturn()
 		else -> visit()
 	}
 
 	fun IrConst.visit() = when (value) {
-		is String -> plainPlain("\"$value\"")
-		is Number -> plainPlain(value.toString())
-		is Boolean -> plainPlain(value.toString())
-		is Char -> plainPlain("'$value'")
-		null -> plainPlain("null")
+		is String -> plainIR("\"$value\"")
+		is Number -> plainIR(value.toString())
+		is Boolean -> plainIR(value.toString())
+		is Char -> plainIR("'$value'")
+		null -> plainIR("null")
 		else -> multiLinePlain(
 			"/*",
 			"Unsupported constant type: ${(value!!)::class.java.simpleName}",
@@ -1085,38 +1311,38 @@ class ClassCodegen(val context: ClrBackendContext) {
 		)
 	}
 
-	fun IrStringConcatenation.visit(): CodeNode = stringConcatenationCode(arguments.map { it.visitUsing() })
+	fun IrStringConcatenation.visit(): BackendIR = stringConcatenationIR(arguments.map { it.visitNeedReturn() })
 
 	fun IrGetValue.visit() = symbol.visit()
 
-	fun IrGetField.visit(): CodeNode = singleLineListCode(
+	fun IrGetField.visit(): BackendIR = singleLineListIR(
 		buildList {
 			receiver?.let {
 				add(it.visit())
-				add(plainPlain("."))
+				add(plainIR("."))
 			}
-			add(symbol.visit().appendSingleLineList(plainPlain("_backingField")))
+			add(symbol.visit().appendSingleLineList(plainIR("_backingField")))
 		}
 	)
 
-	fun IrSetField.visit(): CodeNode = singleLineListCode(
+	fun IrSetField.visit(): BackendIR = singleLineListIR(
 		buildList {
 			receiver?.let {
 				add(it.visit())
-				add(plainPlain("."))
+				add(plainIR("."))
 			}
-			add(symbol.visit().appendSingleLineList(plainPlain("_backingField")))
-			add(plainPlain(" = "))
-			add(value.visitUsing())
+			add(symbol.visit().appendSingleLineList(plainIR("_backingField")))
+			add(plainIR(" = "))
+			add(value.visitNeedReturn())
 		}
 	)
 
 	fun IrSymbol.visit() = when (this) {
 		is IrVariableSymbol,
 		is IrValueSymbol,
-			-> plainPlain(owner.name.visit())
+			-> plainIR(owner.name.visit())
 
-		is IrFieldSymbol -> plainPlain(owner.name.visit())
+		is IrFieldSymbol -> plainIR(owner.name.visit())
 
 		else -> multiLinePlain(
 			"/*",
@@ -1140,10 +1366,10 @@ class ClassCodegen(val context: ClrBackendContext) {
 	fun FqName.visit() = asString()
 
 	fun Visibility.visit() = when (this) {
-		is Visibilities.Private -> plainPlain("private ")
-		is Visibilities.Protected -> plainPlain("protected ")
-		is Visibilities.Internal -> plainPlain("internal ")
-		is Visibilities.Public -> plainPlain("public ")
+		is Visibilities.Private -> plainIR("private ")
+		is Visibilities.Protected -> plainIR("protected ")
+		is Visibilities.Internal -> plainIR("internal ")
+		is Visibilities.Public -> plainIR("public ")
 		else -> multiLinePlain(
 			"/*",
 			"Unsupported visibility: $this",
@@ -1153,8 +1379,8 @@ class ClassCodegen(val context: ClrBackendContext) {
 	}
 
 	fun Modality.visit() = when (this) {
-		FINAL -> plainPlain("sealed ")
-		ABSTRACT -> plainPlain("abstract ")
+		FINAL -> plainIR("sealed ")
+		ABSTRACT -> plainIR("abstract ")
 		SEALED -> multiLinePlain(
 			"/*",
 			"TODO sealed modality",
@@ -1162,7 +1388,7 @@ class ClassCodegen(val context: ClrBackendContext) {
 			"*/",
 		)
 
-		OPEN -> plainPlain("")
+		OPEN -> plainIR("")
 	}
 
 	@OptIn(DeprecatedForRemovalCompilerApi::class)

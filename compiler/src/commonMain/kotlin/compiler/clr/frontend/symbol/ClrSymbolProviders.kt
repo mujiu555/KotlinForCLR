@@ -17,6 +17,7 @@
 package compiler.clr.frontend.symbol
 
 import compiler.clr.frontend.*
+import compiler.clr.frontend.source.ClrPackagePartSource
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.EffectiveVisibility
 import org.jetbrains.kotlin.descriptors.Modality
@@ -35,6 +36,7 @@ import org.jetbrains.kotlin.fir.resolve.providers.FirSymbolNamesProvider
 import org.jetbrains.kotlin.fir.resolve.providers.FirSymbolProvider
 import org.jetbrains.kotlin.fir.resolve.providers.FirSymbolProviderInternals
 import org.jetbrains.kotlin.fir.scopes.kotlinScopeProvider
+import org.jetbrains.kotlin.fir.symbols.FirBasedSymbol
 import org.jetbrains.kotlin.fir.symbols.SymbolInternals
 import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.fir.types.ConeTypeProjection
@@ -90,7 +92,7 @@ class ClrSymbolProvider(
 ) : FirSymbolProvider(session) {
 	private val clrSymbolNamesProvider = ClrSymbolNamesProvider()
 	private val classPackages = mutableMapOf<String, MutableList<ClassId>>()
-	private val classSymbols = mutableMapOf<ClassId, FirRegularClassSymbol>()
+	private val classSymbols = mutableMapOf<ClassId, FirClassLikeSymbol<*>>()
 	private val functionPackages = mutableMapOf<String, MutableList<CallableId>>()
 	private val functionSymbols = mutableMapOf<CallableId, MutableList<FirNamedFunctionSymbol>>()
 
@@ -127,6 +129,8 @@ class ClrSymbolProvider(
 				node.attributes
 					.mapNotNull { it.type }
 					.any { it.match("kotlin.clr", "KotlinFileClass") } -> buildFileClass(node).fir
+
+				node.delegateInvokeMethod != null -> buildTypeAliasFromDelegate(node).fir
 
 				else -> buildClass(node).fir
 			}
@@ -199,6 +203,9 @@ class ClrSymbolProvider(
 		buildRegularClass {
 			moduleData = firModuleData
 			origin = FirDeclarationOrigin.Library
+			node.typeParameters.forEach {
+				typeParameters += buildTypeParameter(it, classSymbol).fir
+			}
 			status = FirResolvedDeclarationStatusImpl(
 				Visibilities.Public,
 				Modality.FINAL,
@@ -209,22 +216,30 @@ class ClrSymbolProvider(
 			declarations += node.constructors
 				.filter { !it.isStatic }
 				.map { buildConstructor(classSymbol.classId, it).fir }
+			declarations += node.events
+				.map { buildPropertyFromEvent(classSymbol.classId, it).fir }
+			declarations += node.fields
+				.filter { !it.isStatic }
+				.map { buildPropertyFromField(classSymbol.classId, it).fir }
 			declarations += node.methods
 				.filter { !it.isStatic }
 				.map { buildFunction(classSymbol.classId, it).fir }
+			declarations += node.properties
+				.filter { !it.isStatic }
+				.map { buildProperty(classSymbol.classId, it).fir }
 
 			name = classSymbol.name
 			scopeProvider = session.kotlinScopeProvider
 			symbol = classSymbol
 			companionObjectSymbol = buildCompanionClass(node, classSymbol.classId)
 			listOfNotNull(node.baseType, *node.interfaces.toTypedArray()).forEach {
-				superTypeRefs += TypeResolver.resolveType(
-					namespace = it.namespace ?: "",
-					name = it.name,
-					isReturnPosition = false,
-					nullable = false,
-					typeParameters = emptyList()
-				)
+				superTypeRefs += buildResolvedTypeRef {
+					coneType = ConeClassLikeTypeImpl(
+						lookupTag = it.resolve(false).toLookupTag(),
+						typeArguments = emptyArray(),
+						isMarkedNullable = false
+					)
+				}
 			}
 		}
 		clrSymbolNamesProvider.registerClassName(classSymbol.packageFqName(), classSymbol.name)
@@ -257,9 +272,15 @@ class ClrSymbolProvider(
 			declarations += node.constructors
 				.filter { it.isStatic }
 				.map { buildConstructor(classSymbol.classId, it).fir }
+			declarations += node.fields
+				.filter { it.isStatic }
+				.map { buildPropertyFromField(classSymbol.classId, it).fir }
 			declarations += node.methods
 				.filter { it.isStatic }
 				.map { buildFunction(classSymbol.classId, it).fir }
+			declarations += node.properties
+				.filter { it.isStatic }
+				.map { buildProperty(classSymbol.classId, it).fir }
 
 			name = classSymbol.name
 			scopeProvider = session.kotlinScopeProvider
@@ -270,6 +291,69 @@ class ClrSymbolProvider(
 			defaultValue = { mutableListOf() }
 		) += classSymbol.classId
 		classSymbols[classSymbol.classId] = classSymbol
+	}
+
+	private fun buildTypeAliasFromDelegate(node: NodeType) = FirTypeAliasSymbol(
+		classId = classId(node.namespace, node.name)
+	).also { typeAliasSymbol ->
+		buildTypeAlias {
+			moduleData = firModuleData
+			origin = FirDeclarationOrigin.Library
+			node.typeParameters.forEach {
+				typeParameters += buildTypeParameter(it, typeAliasSymbol).fir
+			}
+			status = FirResolvedDeclarationStatusImpl(
+				Visibilities.Public,
+				Modality.FINAL,
+				EffectiveVisibility.Public
+			)
+			scopeProvider = session.kotlinScopeProvider
+			name = typeAliasSymbol.name
+			symbol = typeAliasSymbol
+			expandedTypeRef = buildResolvedTypeRef {
+				val method = node.delegateInvokeMethod!!
+				val parameters = method.parameters.filter { parameter ->
+					parameter.type.typeKind in listOf(2, 7, 10, 11)
+				}
+				coneType = ConeClassLikeTypeImpl(
+					lookupTag = classId("kotlin", "Function${parameters.size}").toLookupTag(),
+					typeArguments = arrayOf(
+						*parameters.map { parameter ->
+							when (parameter.type.typeKind) {
+								11 -> ConeTypeParameterTypeImpl(
+									lookupTag = this@buildTypeAlias.typeParameters.find {
+										it.symbol.name.asString() == parameter.type.typeParameter!!.name
+									}!!.symbol.toLookupTag(),
+									isMarkedNullable = true
+								)
+
+								else -> ConeClassLikeTypeImpl(
+									lookupTag = parameter.type.resolve(false).toLookupTag(),
+									typeArguments = emptyArray(),
+									isMarkedNullable = !parameter.attributes.mapNotNull { it.type }.any {
+										it.match("kotlin.clr", "KotlinNotNull")
+									}
+								)
+							}
+						}.toTypedArray(),
+						ConeClassLikeTypeImpl(
+							lookupTag = method.returnType.resolve(false).toLookupTag(),
+							typeArguments = emptyArray(),
+							isMarkedNullable = !method.attributes.mapNotNull { it.type }.any {
+								it.match("kotlin.clr", "KotlinNotNull")
+							}
+						)
+					),
+					isMarkedNullable = false
+				)
+			}
+		}
+		clrSymbolNamesProvider.registerClassName(typeAliasSymbol.packageFqName(), typeAliasSymbol.name)
+		classPackages.getOrPut(
+			key = node.namespace,
+			defaultValue = { mutableListOf() }
+		) += typeAliasSymbol.classId
+		classSymbols[typeAliasSymbol.classId] = typeAliasSymbol
 	}
 
 	private fun buildConstructor(classId: ClassId, node: NodeConstructor) = FirConstructorSymbol(
@@ -283,13 +367,13 @@ class ClrSymbolProvider(
 				Modality.FINAL,
 				EffectiveVisibility.Public
 			)
-			returnTypeRef = TypeResolver.resolveType(
-				namespace = classId.packageFqName.asString(),
-				name = classId.shortClassName.asString(),
-				isReturnPosition = true,
-				nullable = false,
-				typeParameters = emptyList()
-			)
+			returnTypeRef = buildResolvedTypeRef {
+				coneType = ConeClassLikeTypeImpl(
+					lookupTag = classId.resolve(true).toLookupTag(),
+					typeArguments = emptyArray(),
+					isMarkedNullable = false
+				)
+			}
 			if (!node.isStatic) {
 				dispatchReceiverType = ConeClassLikeTypeImpl(
 					classId.toLookupTag(),
@@ -331,19 +415,39 @@ class ClrSymbolProvider(
 					)
 				}
 
-				node.returnType.typeKind in listOf(2, 7, 10) -> TypeResolver.resolveType(
-					namespace = node.returnType.namespace ?: "",
-					name = node.returnType.name,
-					isReturnPosition = true,
-					nullable = !node.attributes.mapNotNull { it.type }.any {
-						it.match("kotlin.clr", "KotlinNotNull")
-					},
-					typeParameters = node.typeParameters.map {
-						typeParameterSymbols.find { symbol ->
-							symbol.name.asString() == it.name
-						}!!
-					}
-				)
+				node.returnType.typeKind == 3 -> buildResolvedTypeRef {
+					coneType = ConeClassLikeTypeImpl(
+						lookupTag = node.returnType.resolve(true).toLookupTag(),
+						typeArguments = node.typeParameters.map {
+							ConeTypeParameterTypeImpl(
+								lookupTag = typeParameterSymbols.find { symbol ->
+									symbol.name.asString() == it.name
+								}!!.toLookupTag(),
+								isMarkedNullable = false
+							)
+						}.toTypedArray(),
+						isMarkedNullable = !node.attributes.mapNotNull { it.type }.any {
+							it.match("kotlin.clr", "KotlinNotNull")
+						}
+					)
+				}
+
+				node.returnType.typeKind in listOf(2, 7, 10) -> buildResolvedTypeRef {
+					coneType = ConeClassLikeTypeImpl(
+						lookupTag = node.returnType.resolve(true).toLookupTag(),
+						typeArguments = node.typeParameters.map {
+							ConeTypeParameterTypeImpl(
+								lookupTag = typeParameterSymbols.find { symbol ->
+									symbol.name.asString() == it.name
+								}!!.toLookupTag(),
+								isMarkedNullable = false
+							)
+						}.toTypedArray(),
+						isMarkedNullable = !node.attributes.mapNotNull { it.type }.any {
+							it.match("kotlin.clr", "KotlinNotNull")
+						}
+					)
+				}
 
 				else -> buildResolvedTypeRef {
 					coneType = ConeClassLikeTypeImpl(
@@ -401,9 +505,20 @@ class ClrSymbolProvider(
 		buildSimpleFunction {
 			moduleData = firModuleData
 			origin = FirDeclarationOrigin.Library
-			status = FirResolvedDeclarationStatusImpl(
+			status = FirDeclarationStatusImpl(
 				Visibilities.Public,
-				Modality.FINAL,
+				when (node.isVirtual || node.isAbstract) {
+					true -> Modality.OPEN
+					else -> Modality.FINAL
+				}
+			).apply {
+				isOverride = node.isOverride
+			}.resolved(
+				Visibilities.Public,
+				when (node.isVirtual || node.isAbstract) {
+					true -> Modality.OPEN
+					else -> Modality.FINAL
+				},
 				EffectiveVisibility.Public
 			)
 
@@ -420,19 +535,39 @@ class ClrSymbolProvider(
 					)
 				}
 
-				node.returnType.typeKind in listOf(2, 7, 10) -> TypeResolver.resolveType(
-					namespace = node.returnType.namespace ?: "",
-					name = node.returnType.name,
-					isReturnPosition = true,
-					nullable = !node.attributes.mapNotNull { it.type }.any {
-						it.match("kotlin.clr", "KotlinNotNull")
-					},
-					typeParameters = node.typeParameters.map {
-						typeParameterSymbols.find { typeParameter ->
-							typeParameter.name.asString() == it.name
-						}!!
-					}
-				)
+				node.returnType.typeKind == 3 -> buildResolvedTypeRef {
+					coneType = ConeClassLikeTypeImpl(
+						lookupTag = node.returnType.resolve(true).toLookupTag(),
+						typeArguments = node.typeParameters.map {
+							ConeTypeParameterTypeImpl(
+								lookupTag = typeParameterSymbols.find { symbol ->
+									symbol.name.asString() == it.name
+								}!!.toLookupTag(),
+								isMarkedNullable = false
+							)
+						}.toTypedArray(),
+						isMarkedNullable = !node.attributes.mapNotNull { it.type }.any {
+							it.match("kotlin.clr", "KotlinNotNull")
+						}
+					)
+				}
+
+				node.returnType.typeKind in listOf(2, 7, 10) -> buildResolvedTypeRef {
+					coneType = ConeClassLikeTypeImpl(
+						lookupTag = node.returnType.resolve(true).toLookupTag(),
+						typeArguments = node.typeParameters.map {
+							ConeTypeParameterTypeImpl(
+								lookupTag = typeParameterSymbols.find { symbol ->
+									symbol.name.asString() == it.name
+								}!!.toLookupTag(),
+								isMarkedNullable = false
+							)
+						}.toTypedArray(),
+						isMarkedNullable = !node.attributes.mapNotNull { it.type }.any {
+							it.match("kotlin.clr", "KotlinNotNull")
+						} && !node.returnType.match("System", "Void")
+					)
+				}
 
 				else -> buildResolvedTypeRef {
 					coneType = ConeClassLikeTypeImpl(
@@ -466,6 +601,234 @@ class ClrSymbolProvider(
 		}
 	}
 
+	private fun buildProperty(classId: ClassId, node: NodeProperty) = FirPropertySymbol(
+		callableId = CallableId(classId, Name.identifier(node.name))
+	).also { functionSymbol ->
+		buildProperty {
+			moduleData = firModuleData
+			origin = FirDeclarationOrigin.Library
+			status = FirDeclarationStatusImpl(
+				Visibilities.Public,
+				Modality.FINAL
+			).apply {
+			}.resolved(
+				Visibilities.Public,
+				Modality.FINAL,
+				EffectiveVisibility.Public
+			)
+
+			returnTypeRef = when {
+				node.type.typeKind == 3 -> buildResolvedTypeRef {
+					coneType = ConeClassLikeTypeImpl(
+						lookupTag = node.type.resolve(true).toLookupTag(),
+						typeArguments = node.type.typeArguments?.filter {
+							it.typeKind in listOf(2, 7, 10)
+						}?.map {
+							ConeClassLikeTypeImpl(
+								lookupTag = it.resolve(true).toLookupTag(),
+								typeArguments = emptyArray(),
+								isMarkedNullable = false
+							)
+						}?.toTypedArray() ?: emptyArray(),
+						isMarkedNullable = !node.attributes.mapNotNull { it.type }.any {
+							it.match("kotlin.clr", "KotlinNotNull")
+						}
+					)
+				}
+
+				node.type.typeKind in listOf(2, 7, 10) -> buildResolvedTypeRef {
+					coneType = ConeClassLikeTypeImpl(
+						lookupTag = node.type.resolve(true).toLookupTag(),
+						typeArguments = emptyArray(),
+						isMarkedNullable = !node.attributes.mapNotNull { it.type }.any {
+							it.match("kotlin.clr", "KotlinNotNull")
+						}
+					)
+				}
+
+				else -> buildResolvedTypeRef {
+					coneType = ConeClassLikeTypeImpl(
+						classId("kotlin", "Any").toLookupTag(),
+						emptyArray(),
+						true
+					)
+				}
+			}
+
+			if (!node.isStatic) {
+				dispatchReceiverType = ConeClassLikeTypeImpl(
+					lookupTag = classId.toLookupTag(),
+					typeArguments = emptyArray(),
+					isMarkedNullable = false
+				)
+			}
+
+			name = Name.identifier(node.name)
+			isVar = !node.isReadOnly
+			if (node.isStatic) {
+				annotations += buildAnnotation {
+					annotationTypeRef = buildResolvedTypeRef {
+						coneType = ConeClassLikeTypeImpl(
+							lookupTag = classId("kotlin.clr", "ClrStatic").toLookupTag(),
+							typeArguments = emptyArray(),
+							isMarkedNullable = false
+						)
+					}
+					argumentMapping = FirEmptyAnnotationArgumentMapping
+				}
+			}
+			symbol = functionSymbol
+			isLocal = false
+		}
+	}
+
+	private fun buildPropertyFromEvent(classId: ClassId, node: NodeEvent) = FirPropertySymbol(
+		callableId = CallableId(classId, Name.identifier(node.name))
+	).also { functionSymbol ->
+		buildProperty {
+			moduleData = firModuleData
+			origin = FirDeclarationOrigin.Library
+			status = FirDeclarationStatusImpl(
+				Visibilities.Public,
+				Modality.FINAL
+			).apply {
+			}.resolved(
+				Visibilities.Public,
+				Modality.FINAL,
+				EffectiveVisibility.Public
+			)
+
+			returnTypeRef = when {
+				node.type.typeKind == 3 -> buildResolvedTypeRef {
+					coneType = ConeClassLikeTypeImpl(
+						lookupTag = classId("kotlin", "Event").toLookupTag(),
+						typeArguments = arrayOf(
+							ConeClassLikeTypeImpl(
+								lookupTag = StandardClassIds.Unit.toLookupTag(),
+								typeArguments = emptyArray(),
+								isMarkedNullable = false
+							),
+							ConeClassLikeTypeImpl(
+								lookupTag = node.type.resolve(true).toLookupTag(),
+								typeArguments = node.type.typeArguments?.map {
+									ConeClassLikeTypeImpl(
+										lookupTag = it.resolve(true).toLookupTag(),
+										typeArguments = emptyArray(),
+										isMarkedNullable = false
+									)
+								}?.toTypedArray() ?: emptyArray(),
+								isMarkedNullable = false
+							)
+						),
+						isMarkedNullable = false
+					)
+				}
+
+				else -> buildResolvedTypeRef {
+					coneType = ConeClassLikeTypeImpl(
+						classId("kotlin", "Any").toLookupTag(),
+						emptyArray(),
+						true
+					)
+				}
+			}
+
+			if (!node.isStatic) {
+				dispatchReceiverType = ConeClassLikeTypeImpl(
+					lookupTag = classId.toLookupTag(),
+					typeArguments = emptyArray(),
+					isMarkedNullable = false
+				)
+			}
+
+			name = Name.identifier(node.name)
+			isVar = false
+			symbol = functionSymbol
+			isLocal = false
+		}
+	}
+
+	private fun buildPropertyFromField(classId: ClassId, node: NodeField) = FirPropertySymbol(
+		callableId = CallableId(classId, Name.identifier(node.name))
+	).also { functionSymbol ->
+		buildProperty {
+			moduleData = firModuleData
+			origin = FirDeclarationOrigin.Library
+			status = FirDeclarationStatusImpl(
+				Visibilities.Public,
+				Modality.FINAL
+			).apply {
+			}.resolved(
+				Visibilities.Public,
+				Modality.FINAL,
+				EffectiveVisibility.Public
+			)
+
+			returnTypeRef = when {
+				node.type.typeKind == 3 -> buildResolvedTypeRef {
+					coneType = ConeClassLikeTypeImpl(
+						lookupTag = node.type.resolve(true).toLookupTag(),
+						typeArguments = node.type.typeArguments?.filter {
+							it.typeKind in listOf(2, 7, 10)
+						}?.map {
+							ConeClassLikeTypeImpl(
+								lookupTag = it.resolve(true).toLookupTag(),
+								typeArguments = emptyArray(),
+								isMarkedNullable = false
+							)
+						}?.toTypedArray() ?: emptyArray(),
+						isMarkedNullable = !node.attributes.mapNotNull { it.type }.any {
+							it.match("kotlin.clr", "KotlinNotNull")
+						}
+					)
+				}
+
+				node.type.typeKind in listOf(2, 7, 10) -> buildResolvedTypeRef {
+					coneType = ConeClassLikeTypeImpl(
+						lookupTag = node.type.resolve(true).toLookupTag(),
+						typeArguments = emptyArray(),
+						isMarkedNullable = !node.attributes.mapNotNull { it.type }.any {
+							it.match("kotlin.clr", "KotlinNotNull")
+						}
+					)
+				}
+
+				else -> buildResolvedTypeRef {
+					coneType = ConeClassLikeTypeImpl(
+						classId("kotlin", "Any").toLookupTag(),
+						emptyArray(),
+						true
+					)
+				}
+			}
+
+			if (!node.isStatic) {
+				dispatchReceiverType = ConeClassLikeTypeImpl(
+					lookupTag = classId.toLookupTag(),
+					typeArguments = emptyArray(),
+					isMarkedNullable = false
+				)
+			}
+
+			name = Name.identifier(node.name)
+			isVar = false
+			if (node.isStatic) {
+				annotations += buildAnnotation {
+					annotationTypeRef = buildResolvedTypeRef {
+						coneType = ConeClassLikeTypeImpl(
+							lookupTag = classId("kotlin.clr", "ClrStatic").toLookupTag(),
+							typeArguments = emptyArray(),
+							isMarkedNullable = false
+						)
+					}
+					argumentMapping = FirEmptyAnnotationArgumentMapping
+				}
+			}
+			symbol = functionSymbol
+			isLocal = false
+		}
+	}
+
 	private fun buildValueParameter(
 		node: NodeParameter,
 		containingSymbol: FirFunctionSymbol<*>,
@@ -477,15 +840,33 @@ class ClrSymbolProvider(
 			moduleData = firModuleData
 			origin = FirDeclarationOrigin.Library
 			returnTypeRef = when {
-				node.type.typeKind in listOf(2, 7, 10) -> TypeResolver.resolveType(
-					namespace = node.type.namespace ?: "",
-					name = node.type.name,
-					isReturnPosition = true,
-					nullable = !node.attributes.mapNotNull { it.type }.any {
-						it.match("kotlin.clr", "KotlinNotNull")
-					},
-					typeParameters = emptyList()
-				)
+				node.type.typeKind == 3 -> buildResolvedTypeRef {
+					coneType = ConeClassLikeTypeImpl(
+						lookupTag = node.type.resolve(true).toLookupTag(),
+						typeArguments = node.type.typeArguments?.filter {
+							it.typeKind in listOf(2, 7, 10)
+						}?.map {
+							ConeClassLikeTypeImpl(
+								lookupTag = it.resolve(true).toLookupTag(),
+								typeArguments = emptyArray(),
+								isMarkedNullable = false
+							)
+						}?.toTypedArray() ?: emptyArray(),
+						isMarkedNullable = !node.attributes.mapNotNull { it.type }.any {
+							it.match("kotlin.clr", "KotlinNotNull")
+						}
+					)
+				}
+
+				node.type.typeKind in listOf(2, 7, 10) -> buildResolvedTypeRef {
+					coneType = ConeClassLikeTypeImpl(
+						lookupTag = node.type.resolve(true).toLookupTag(),
+						typeArguments = emptyArray(),
+						isMarkedNullable = !node.attributes.mapNotNull { it.type }.any {
+							it.match("kotlin.clr", "KotlinNotNull")
+						}
+					)
+				}
 
 				node.type.typeKind == 1 -> buildResolvedTypeRef {
 					coneType = ConeClassLikeTypeImpl(
@@ -520,7 +901,7 @@ class ClrSymbolProvider(
 		}
 	}
 
-	private fun buildTypeParameter(node: NodeTypeParameter, containingSymbol: FirFunctionSymbol<*>) =
+	private fun buildTypeParameter(node: NodeTypeParameter, containingSymbol: FirBasedSymbol<*>) =
 		FirTypeParameterSymbol().also { parameterSymbol ->
 			buildTypeParameter {
 				moduleData = firModuleData
@@ -542,7 +923,7 @@ class ClrSymbolProvider(
 
 	fun hasClassSymbol(classId: ClassId): Boolean = classId in classSymbols
 
-	override fun getClassLikeSymbolByClassId(classId: ClassId): FirRegularClassSymbol? {
+	override fun getClassLikeSymbolByClassId(classId: ClassId): FirClassLikeSymbol<*>? {
 		return classSymbols[classId]
 	}
 

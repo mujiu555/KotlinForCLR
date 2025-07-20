@@ -17,7 +17,7 @@
 package compiler.clr.backend
 
 import compiler.clr.backend.codegen.ClassCodegen
-import compiler.clr.backend.codegen.CodeNode
+import compiler.clr.backend.codegen.BackendIR
 import org.jetbrains.kotlin.backend.common.phaser.PhaseEngine
 import org.jetbrains.kotlin.config.phaseConfig
 import org.jetbrains.kotlin.config.phaser.PhaseConfig
@@ -67,7 +67,7 @@ class CSharpCodegenFactory {
 		return CodegenInput(state, context, irModuleFragment, allBuiltins)
 	}
 
-	fun invokeCodegen(input: CodegenInput): Map<IrFile, CodeNode>? {
+	fun invokeCodegen(input: CodegenInput): Map<IrFile, BackendIR>? {
 		val (state, context, module, _) = input
 
 		fun hasErrors() = (state.diagnosticReporter as? BaseDiagnosticsCollector)?.hasErrors == true

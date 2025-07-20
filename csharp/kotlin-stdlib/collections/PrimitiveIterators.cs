@@ -16,49 +16,49 @@
 
 namespace kotlin.collections;
 
-public abstract class ByteIterator : Iterator<sbyte> {
+public abstract class ByteIterator : KotlinIterator<sbyte> {
 	public abstract bool hasNext();
 	public sbyte next() => nextByte();
 	public abstract sbyte nextByte();
 }
 
-public abstract class CharIterator : Iterator<char> {
+public abstract class CharIterator : KotlinIterator<char> {
 	public abstract bool hasNext();
 	public char next() => nextChar();
 	public abstract char nextChar();
 }
 
-public abstract class ShortIterator : Iterator<short> {
+public abstract class ShortIterator : KotlinIterator<short> {
 	public abstract bool hasNext();
 	public short next() => nextShort();
 	public abstract short nextShort();
 }
 
-public abstract class IntIterator : Iterator<int> {
+public abstract class IntIterator : KotlinIterator<int> {
 	public abstract bool hasNext();
 	public int next() => nextInt();
 	public abstract int nextInt();
 }
 
-public abstract class LongIterator : Iterator<long> {
+public abstract class LongIterator : KotlinIterator<long> {
 	public abstract bool hasNext();
 	public long next() => nextLong();
 	public abstract long nextLong();
 }
 
-public abstract class FloatIterator : Iterator<float> {
+public abstract class FloatIterator : KotlinIterator<float> {
 	public abstract bool hasNext();
 	public float next() => nextFloat();
 	public abstract float nextFloat();
 }
 
-public abstract class DoubleIterator : Iterator<double> {
+public abstract class DoubleIterator : KotlinIterator<double> {
 	public abstract bool hasNext();
 	public double next() => nextDouble();
 	public abstract double nextDouble();
 }
 
-public abstract class BooleanIterator : Iterator<bool> {
+public abstract class BooleanIterator : KotlinIterator<bool> {
 	public abstract bool hasNext();
 	public bool next() => nextBoolean();
 	public abstract bool nextBoolean();

@@ -16,31 +16,48 @@
 
 package compiler.clr.backend.codegen
 
-fun CodeNode.render() = Renderer().run { render(0) }
+import org.jetbrains.kotlin.ir.declarations.IrFile
+import org.jetbrains.kotlin.ir.declarations.name
+
+fun Map<IrFile, BackendIR>.render() = Renderer().run {
+	map { (file, node) ->
+		buildString {
+			append("    <File name=\"${file.name}\">")
+			appendLine()
+			append(node.render(2))
+			appendLine()
+			append("    </File>")
+		}
+	}.joinToString(
+		separator = "\n",
+		prefix = "<Root>\n",
+		postfix = "\n</Root>"
+	)
+}
 
 private class Renderer {
-	fun CodeNode.render(padding: Int): String = when (this) {
-		is CodeNode.None -> render(padding)
-		is CodeNode.SingleLineList -> render(padding)
-		is CodeNode.MultiLineList -> render(padding)
-		is CodeNode.SingleLine -> render(padding)
-		is CodeNode.MultiLine -> render(padding)
-		is CodeNode.StringConcatenation -> render(padding)
-		is PlainNode.Plain -> render(padding)
-		is PlainNode.SingleLine -> render(padding)
-		is PlainNode.MultiLine -> render(padding)
-		is PaddingNode.If -> render(padding)
-		is PaddingNode.IfExp -> render(padding)
-		is PaddingNode.Block -> render(padding)
-		is PaddingNode.BlockList -> render(padding)
+	fun BackendIR.render(padding: Int): String = when (this) {
+		is BackendIR.None -> render(padding)
+		is BackendIR.SingleLineList -> render(padding)
+		is BackendIR.MultiLineList -> render(padding)
+		is BackendIR.SingleLine -> render(padding)
+		is BackendIR.MultiLine -> render(padding)
+		is BackendIR.StringConcatenation -> render(padding)
+		is PlainIR.Plain -> render(padding)
+		is PlainIR.SingleLine -> render(padding)
+		is PlainIR.MultiLine -> render(padding)
+		is PaddingIR.If -> render(padding)
+		is PaddingIR.IfExp -> render(padding)
+		is PaddingIR.Block -> render(padding)
+		is PaddingIR.BlockList -> render(padding)
 	}
 
-	private fun CodeNode.None.render(padding: Int) = buildString {
+	private fun BackendIR.None.render(padding: Int) = buildString {
 		repeat(padding) { append("    ") }
 		append("<CodeNode.None />")
 	}
 
-	private fun CodeNode.SingleLineList.render(padding: Int) = buildString {
+	private fun BackendIR.SingleLineList.render(padding: Int) = buildString {
 		repeat(padding) { append("    ") }
 		appendLine("<CodeNode.SingleLineList>")
 
@@ -50,7 +67,7 @@ private class Renderer {
 		append("</CodeNode.SingleLineList>")
 	}
 
-	private fun CodeNode.MultiLineList.render(padding: Int) = buildString {
+	private fun BackendIR.MultiLineList.render(padding: Int) = buildString {
 		repeat(padding) { append("    ") }
 		appendLine("<CodeNode.MultiLineList>")
 
@@ -60,7 +77,7 @@ private class Renderer {
 		append("</CodeNode.MultiLineList>")
 	}
 
-	private fun CodeNode.SingleLine.render(padding: Int) = buildString {
+	private fun BackendIR.SingleLine.render(padding: Int) = buildString {
 		repeat(padding) { append("    ") }
 		appendLine("<CodeNode.SingleLine>")
 
@@ -70,7 +87,7 @@ private class Renderer {
 		append("</CodeNode.SingleLine>")
 	}
 
-	private fun CodeNode.MultiLine.render(padding: Int) = buildString {
+	private fun BackendIR.MultiLine.render(padding: Int) = buildString {
 		repeat(padding) { append("    ") }
 		appendLine("<CodeNode.MultiLine>")
 
@@ -80,7 +97,7 @@ private class Renderer {
 		append("</CodeNode.MultiLine>")
 	}
 
-	private fun CodeNode.StringConcatenation.render(padding: Int) = buildString {
+	private fun BackendIR.StringConcatenation.render(padding: Int) = buildString {
 		repeat(padding) { append("    ") }
 		appendLine("<CodeNode.StringConcatenation>")
 
@@ -90,14 +107,14 @@ private class Renderer {
 		append("</CodeNode.StringConcatenation>")
 	}
 
-	private fun PlainNode.Plain.render(padding: Int) = buildString {
+	private fun PlainIR.Plain.render(padding: Int) = buildString {
 		repeat(padding) { append("    ") }
 		append("<PlainNode.Plain>")
 		append(text.replace("<", "&lt;").replace(">", "&gt;"))
 		append("</PlainNode.Plain>")
 	}
 
-	private fun PlainNode.SingleLine.render(padding: Int) = buildString {
+	private fun PlainIR.SingleLine.render(padding: Int) = buildString {
 		repeat(padding) { append("    ") }
 		appendLine("<PlainNode.SingleLine>")
 
@@ -107,7 +124,7 @@ private class Renderer {
 		append("</PlainNode.SingleLine>")
 	}
 
-	private fun PlainNode.MultiLine.render(padding: Int) = buildString {
+	private fun PlainIR.MultiLine.render(padding: Int) = buildString {
 		repeat(padding) { append("    ") }
 		appendLine("<PlainNode.MultiLine>")
 
@@ -117,7 +134,7 @@ private class Renderer {
 		append("</PlainNode.MultiLine>")
 	}
 
-	private fun PaddingNode.If.render(padding: Int) = buildString {
+	private fun PaddingIR.If.render(padding: Int) = buildString {
 		repeat(padding) { append("    ") }
 		appendLine("<PaddingNode.If>")
 
@@ -149,7 +166,7 @@ private class Renderer {
 		append("</PaddingNode.If>")
 	}
 
-	private fun PaddingNode.IfExp.render(padding: Int) = buildString {
+	private fun PaddingIR.IfExp.render(padding: Int) = buildString {
 		repeat(padding) { append("    ") }
 		appendLine("<PaddingNode.IfExp>")
 
@@ -181,7 +198,7 @@ private class Renderer {
 		append("</PaddingNode.IfExp>")
 	}
 
-	private fun PaddingNode.Block.render(padding: Int) = buildString {
+	private fun PaddingIR.Block.render(padding: Int) = buildString {
 		repeat(padding) { append("    ") }
 		appendLine("<PaddingNode.Block>")
 
@@ -191,7 +208,7 @@ private class Renderer {
 		append("</PaddingNode.Block>")
 	}
 
-	private fun PaddingNode.BlockList.render(padding: Int) = buildString {
+	private fun PaddingIR.BlockList.render(padding: Int) = buildString {
 		repeat(padding) { append("    ") }
 		appendLine("<PaddingNode.BlockList>")
 

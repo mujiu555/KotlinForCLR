@@ -34,12 +34,12 @@ fun resolveAssembly(
 	val json = process.inputReader(Charsets.UTF_8).use {
 		it.readText()
 	}
-	return try {
+	return runCatching {
 		Json.decodeFromString<NodeAssembly>(json)
-	} catch (e: Exception) {
+	}.getOrElse {
 		println("exception: dotnet \"$programPath\" \"${assemblies.joinToString(";")}\" \"$assembly\"")
 		println(json)
-		throw e
+		throw it
 	}
 }
 
@@ -81,6 +81,7 @@ data class NodeType(
 	val isPublic: Boolean,
 	val isSealed: Boolean,
 	val isValueType: Boolean,
+	val delegateInvokeMethod: NodeMethod?,
 ) : AssemblyNode() {
 	fun match(namespace: String, name: String) = this.namespace == namespace && this.name == name
 	fun match(name: String) = this.namespace == "" && this.name == name
@@ -100,10 +101,20 @@ data class NodeConstructor(
 ) : AssemblyNode()
 
 @Serializable
-data object NodeEvent : AssemblyNode()
+data class NodeEvent(
+	val name: String,
+	val type: NodeTypeReference,
+	val isStatic: Boolean,
+) : AssemblyNode()
 
 @Serializable
-data object NodeField : AssemblyNode()
+data class NodeField(
+	val name: String,
+	val type: NodeTypeReference,
+	val attributes: List<NodeAttribute>,
+	val isReadOnly: Boolean,
+	val isStatic: Boolean,
+) : AssemblyNode()
 
 @Serializable
 data class NodeMethod(
@@ -120,10 +131,17 @@ data class NodeMethod(
 	val isPublic: Boolean,
 	val isStatic: Boolean,
 	val isVirtual: Boolean,
+	val isOverride: Boolean,
 ) : AssemblyNode()
 
 @Serializable
-data object NodeProperty : AssemblyNode()
+data class NodeProperty(
+	val name: String,
+	val type: NodeTypeReference,
+	val attributes: List<NodeAttribute>,
+	val isReadOnly: Boolean,
+	val isStatic: Boolean,
+) : AssemblyNode()
 
 @Serializable
 data class NodeParameter(
@@ -155,6 +173,7 @@ data class NodeTypeReference(
 	val typeKind: Int,
 	val typeParameter: NodeTypeParameter?,
 	val typeParameters: List<NodeTypeParameter>?,
+	val typeArguments: List<NodeTypeReference>?,
 ) : AssemblyNode() {
 	fun match(namespace: String, name: String) = this.namespace == namespace && this.name == name
 	fun match(name: String) = this.namespace == null && this.name == name

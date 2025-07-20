@@ -14,6 +14,16 @@
    limitations under the License.
  */
 
-namespace kotlin;
+using System;
 
-public interface Function<out R>;
+namespace kotlin.clr;
+
+public static class NotNullAssertion {
+	[KotlinNotNull]
+	public static T notNull<T>(T? value) {
+		if (value is null) {
+			throw new NullReferenceException(nameof(value));
+		}
+		return value;
+	}
+}

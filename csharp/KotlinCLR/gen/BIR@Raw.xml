@@ -1,0 +1,121 @@
+<Root>
+    <File name="Main.kt">
+        <CodeNode.MultiLine>
+            <PlainNode.SingleLine>
+                <PlainNode.Plain>[global::kotlin.clr.KotlinFileClass]</PlainNode.Plain>
+            </PlainNode.SingleLine>
+            <CodeNode.SingleLine>
+                <PlainNode.Plain>public </PlainNode.Plain>
+                <PlainNode.Plain>static </PlainNode.Plain>
+                <PlainNode.Plain>class </PlainNode.Plain>
+                <PlainNode.Plain>MainKt</PlainNode.Plain>
+            </CodeNode.SingleLine>
+            <PaddingNode.Block>
+                <CodeNode.MultiLine>
+                    <CodeNode.SingleLine>
+                        <PlainNode.Plain>public </PlainNode.Plain>
+                        <PlainNode.Plain>static </PlainNode.Plain>
+                        <PlainNode.Plain>void </PlainNode.Plain>
+                        <PlainNode.Plain>main(</PlainNode.Plain>
+                        <PlainNode.Plain></PlainNode.Plain>
+                        <PlainNode.Plain>)</PlainNode.Plain>
+                    </CodeNode.SingleLine>
+                    <PaddingNode.Block>
+                        <CodeNode.SingleLine>
+                            <PlainNode.Plain>int</PlainNode.Plain>
+                            <PlainNode.Plain> </PlainNode.Plain>
+                            <PlainNode.Plain>a</PlainNode.Plain>
+                            <PlainNode.Plain> = </PlainNode.Plain>
+                            <PlainNode.Plain>1</PlainNode.Plain>
+                            <PlainNode.Plain>;</PlainNode.Plain>
+                        </CodeNode.SingleLine>
+                        <CodeNode.SingleLine>
+                            <PlainNode.Plain>string</PlainNode.Plain>
+                            <PlainNode.Plain> </PlainNode.Plain>
+                            <PlainNode.Plain>s1</PlainNode.Plain>
+                            <PlainNode.Plain> = </PlainNode.Plain>
+                            <CodeNode.StringConcatenation>
+                                <PlainNode.Plain>"a is "</PlainNode.Plain>
+                                <PlainNode.Plain>a</PlainNode.Plain>
+                            </CodeNode.StringConcatenation>
+                            <PlainNode.Plain>;</PlainNode.Plain>
+                        </CodeNode.SingleLine>
+                        <CodeNode.SingleLine>
+                            <CodeNode.SingleLineList>
+                                <PlainNode.Plain>a</PlainNode.Plain>
+                                <PlainNode.Plain> = </PlainNode.Plain>
+                                <PlainNode.Plain>2</PlainNode.Plain>
+                            </CodeNode.SingleLineList>
+                            <PlainNode.Plain>;</PlainNode.Plain>
+                        </CodeNode.SingleLine>
+                        <CodeNode.SingleLine>
+                            <PlainNode.Plain>string</PlainNode.Plain>
+                            <PlainNode.Plain> </PlainNode.Plain>
+                            <PlainNode.Plain>s2</PlainNode.Plain>
+                            <PlainNode.Plain> = </PlainNode.Plain>
+                            <CodeNode.StringConcatenation>
+                                <CodeNode.SingleLineList>
+                                    <PlainNode.Plain>global::kotlin.text.TextH</PlainNode.Plain>
+                                    <PlainNode.Plain>.</PlainNode.Plain>
+                                    <PlainNode.Plain>replace</PlainNode.Plain>
+                                    <PlainNode.Plain>(</PlainNode.Plain>
+                                    <PlainNode.Plain>s1</PlainNode.Plain>
+                                    <PlainNode.Plain>, </PlainNode.Plain>
+                                    <PlainNode.Plain>"is"</PlainNode.Plain>
+                                    <PlainNode.Plain>, </PlainNode.Plain>
+                                    <PlainNode.Plain>"was"</PlainNode.Plain>
+                                    <PlainNode.Plain>)</PlainNode.Plain>
+                                </CodeNode.SingleLineList>
+                                <PlainNode.Plain>", but now is "</PlainNode.Plain>
+                                <PlainNode.Plain>a</PlainNode.Plain>
+                            </CodeNode.StringConcatenation>
+                            <PlainNode.Plain>;</PlainNode.Plain>
+                        </CodeNode.SingleLine>
+                        <CodeNode.SingleLine>
+                            <CodeNode.SingleLineList>
+                                <PlainNode.Plain>global::kotlin.io.ConsoleKt</PlainNode.Plain>
+                                <PlainNode.Plain>.</PlainNode.Plain>
+                                <PlainNode.Plain>println</PlainNode.Plain>
+                                <PlainNode.Plain>(</PlainNode.Plain>
+                                <CodeNode.SingleLineList>
+                                    <PlainNode.Plain>(</PlainNode.Plain>
+                                    <PlainNode.Plain>s1</PlainNode.Plain>
+                                    <PlainNode.Plain>)</PlainNode.Plain>
+                                    <PlainNode.Plain> + </PlainNode.Plain>
+                                    <PlainNode.Plain>(</PlainNode.Plain>
+                                    <PlainNode.Plain>s2</PlainNode.Plain>
+                                    <PlainNode.Plain>)</PlainNode.Plain>
+                                </CodeNode.SingleLineList>
+                                <PlainNode.Plain>)</PlainNode.Plain>
+                            </CodeNode.SingleLineList>
+                            <PlainNode.Plain>;</PlainNode.Plain>
+                        </CodeNode.SingleLine>
+                    </PaddingNode.Block>
+                </CodeNode.MultiLine>
+                <CodeNode.None />
+                <CodeNode.MultiLine>
+                    <CodeNode.SingleLine>
+                        <PlainNode.Plain>public </PlainNode.Plain>
+                        <PlainNode.Plain>static </PlainNode.Plain>
+                        <PlainNode.Plain>void </PlainNode.Plain>
+                        <PlainNode.Plain>Main(</PlainNode.Plain>
+                        <PlainNode.Plain>[global::kotlin.clr.KotlinNotNull] string[] args</PlainNode.Plain>
+                        <PlainNode.Plain>)</PlainNode.Plain>
+                    </CodeNode.SingleLine>
+                    <PaddingNode.Block>
+                        <CodeNode.SingleLine>
+                            <CodeNode.SingleLineList>
+                                <PlainNode.Plain>global::MainKt</PlainNode.Plain>
+                                <PlainNode.Plain>.</PlainNode.Plain>
+                                <PlainNode.Plain>main</PlainNode.Plain>
+                                <PlainNode.Plain>(</PlainNode.Plain>
+                                <PlainNode.Plain>)</PlainNode.Plain>
+                            </CodeNode.SingleLineList>
+                            <PlainNode.Plain>;</PlainNode.Plain>
+                        </CodeNode.SingleLine>
+                    </PaddingNode.Block>
+                </CodeNode.MultiLine>
+            </PaddingNode.Block>
+        </CodeNode.MultiLine>
+    </File>
+</Root>

@@ -96,7 +96,8 @@ public record NodeType(
 	bool isPointer,
 	bool isPublic,
 	bool isSealed,
-	bool isValueType
+	bool isValueType,
+	NodeMethod? delegateInvokeMethod
 ) {
 	public static NodeType from(INamedTypeSymbol symbol) => new(
 		name: symbol.Name,
@@ -119,6 +120,7 @@ public record NodeType(
 		methods: symbol.GetMembers()
 			.Where(it => it is IMethodSymbol)
 			.Cast<IMethodSymbol>()
+			.Where(it => it.MethodKind != MethodKind.PropertyGet && it.MethodKind != MethodKind.PropertySet)
 			.Select(NodeMethod.from)
 			.ToList(),
 		nestedTypes: symbol.GetMembers()
@@ -147,7 +149,8 @@ public record NodeType(
 		isPointer: symbol.TypeKind == TypeKind.Pointer,
 		isPublic: symbol.DeclaredAccessibility == Accessibility.Public,
 		isSealed: symbol.IsSealed,
-		isValueType: symbol.IsValueType
+		isValueType: symbol.IsValueType,
+		delegateInvokeMethod: symbol.DelegateInvokeMethod?.let(NodeMethod.from)
 	);
 }
 
@@ -176,14 +179,30 @@ public record NodeConstructor(
 }
 
 public record NodeEvent(
+	string name,
+	NodeTypeReference type,
+	bool isStatic
 ) {
 	public static NodeEvent from(IEventSymbol symbol) => new(
+		name: symbol.Name,
+		type: NodeTypeReference.from(symbol.Type),
+		isStatic: symbol.IsStatic
 	);
 }
 
 public record NodeField(
+	string name,
+	NodeTypeReference type,
+	List<NodeAttribute> attributes,
+	bool isReadOnly,
+	bool isStatic
 ) {
 	public static NodeField from(IFieldSymbol symbol) => new(
+		name: symbol.Name,
+		type: NodeTypeReference.from(symbol.Type),
+		attributes: symbol.GetAttributes().Select(NodeAttribute.from).ToList(),
+		isReadOnly: symbol.IsReadOnly,
+		isStatic: symbol.IsStatic
 	);
 }
 
@@ -200,7 +219,8 @@ public record NodeMethod(
 	bool isPrivate,
 	bool isPublic,
 	bool isStatic,
-	bool isVirtual
+	bool isVirtual,
+	bool isOverride
 ) {
 	public static NodeMethod from(IMethodSymbol symbol) => new(
 		name: symbol.Name,
@@ -215,13 +235,24 @@ public record NodeMethod(
 		isPrivate: symbol.DeclaredAccessibility == Accessibility.Private,
 		isPublic: symbol.DeclaredAccessibility == Accessibility.Public,
 		isStatic: symbol.IsStatic,
-		isVirtual: symbol.IsVirtual
+		isVirtual: symbol.IsVirtual,
+		isOverride: symbol.IsOverride
 	);
 }
 
 public record NodeProperty(
+	string name,
+	NodeTypeReference type,
+	List<NodeAttribute> attributes,
+	bool isReadOnly,
+	bool isStatic
 ) {
 	public static NodeProperty from(IPropertySymbol symbol) => new(
+		name: symbol.Name,
+		type: NodeTypeReference.from(symbol.Type),
+		attributes: symbol.GetAttributes().Select(NodeAttribute.from).ToList(),
+		isReadOnly: symbol.IsReadOnly,
+		isStatic: symbol.IsStatic
 	);
 }
 
@@ -270,7 +301,8 @@ public record NodeTypeReference(
 	string name,
 	TypeKind typeKind,
 	NodeTypeParameter? typeParameter,
-	List<NodeTypeParameter>? typeParameters
+	List<NodeTypeParameter>? typeParameters,
+	List<NodeTypeReference>? typeArguments
 ) {
 	public static NodeTypeReference from(ITypeSymbol symbol) => new(
 		@namespace: symbol.ContainingNamespace?.ToDisplayString(),
@@ -279,8 +311,11 @@ public record NodeTypeReference(
 		typeParameter: symbol is ITypeParameterSymbol typeParameterSymbol
 			? NodeTypeParameter.from(typeParameterSymbol)
 			: null,
-		typeParameters: symbol is INamedTypeSymbol namedTypeSymbol
-			? namedTypeSymbol.TypeParameters.Select(NodeTypeParameter.from).ToList()
+		typeParameters: symbol is INamedTypeSymbol namedTypeSymbol1
+			? namedTypeSymbol1.TypeParameters.Select(NodeTypeParameter.from).ToList()
+			: null,
+		typeArguments: symbol is INamedTypeSymbol namedTypeSymbol2
+			? namedTypeSymbol2.TypeArguments.Select(from).ToList()
 			: null
 	);
 }

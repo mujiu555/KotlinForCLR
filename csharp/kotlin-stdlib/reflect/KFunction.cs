@@ -16,4 +16,4 @@
 
 namespace kotlin.reflect;
 
-public interface KFunction : KCallable, Function;
+public interface KFunction<out R> : KCallable<R>, Function<R>;

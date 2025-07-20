@@ -18,7 +18,7 @@ using kotlin.clr;
 
 namespace kotlin.reflect;
 
-public interface KCallable {
+public interface KCallable<out R> {
 	[KotlinNotNull]
 	public string name { get; }
 }

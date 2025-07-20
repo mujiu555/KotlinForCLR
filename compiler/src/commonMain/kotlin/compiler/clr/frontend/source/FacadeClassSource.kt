@@ -14,7 +14,7 @@
    limitations under the License.
  */
 
-package compiler.clr.frontend
+package compiler.clr.frontend.source
 
 import org.jetbrains.kotlin.name.ClassId
 
