@@ -81,11 +81,22 @@ private fun mapKotlinToCLRType(type: IrType, fqName: FqName, typeStyle: TypeStyl
 		"kotlin.String" -> "string"
 		"kotlin.Throwable" -> "global::System.Exception"
 
-		else if (type.isFunction()) -> buildString {
-			append("global::System.Func")
-			append("<")
-			append((type as IrSimpleType).arguments.joinToString { it.typeOrFail.map(TypeStyle.TypeArgument) })
-			append(">")
+		else if (type.isFunction() && type is IrSimpleType) -> when {
+			type.arguments.last().typeOrFail.isUnit() -> buildString {
+				append("global::System.Action")
+				type.arguments.dropLast(1).ifNotEmpty {
+					append("<")
+					append(joinToString { it.typeOrFail.map(TypeStyle.TypeArgument) })
+					append(">")
+				}
+			}
+
+			else -> buildString {
+				append("global::System.Func")
+				append("<")
+				append(type.arguments.joinToString { it.typeOrFail.map(TypeStyle.TypeArgument) })
+				append(">")
+			}
 		}
 
 		else -> buildString {
