@@ -213,19 +213,20 @@ object Frontend : PipelinePhase<ConfigurationPipelineArtifact, ClrFrontendPipeli
 				.map { it.absolutePath }
 				.map { assembly ->
 					scope.async {
-						manifest[assembly]?.also { println("load from cache: $assembly") }
+						manifest[assembly]?.also { println("[$assembly] load from cache") }
 							?: resolveAssembly(
 								dotnetHome = configuration.get(CLRConfigurationKeys.DOTNET_HOME)?.absolutePath,
 								programPath = configuration.get(CLRConfigurationKeys.ASSEMBLY_RESOLVER)!!.absolutePath,
 								assemblies = dllPaths.map(File::getAbsolutePath),
 								assembly = assembly
-							).also {
+							)?.also {
 								manifestRaw[assembly] = "${it.name}.json"
 								File(cacheDir, "${it.name}.json").writeText(Json.encodeToString(it))
 							}
 					}
 				}
 				.awaitAll()
+				.requireNoNulls()
 				.associateBy { it.name }
 		}
 

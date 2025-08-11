@@ -16,30 +16,39 @@
 
 package compiler.clr.frontend
 
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
-fun resolveAssembly(
+private val mutex = Mutex()
+
+suspend fun resolveAssembly(
 	dotnetHome: String?,
 	programPath: String,
 	assemblies: List<String>,
 	assembly: String,
-): NodeAssembly {
-	println("processing: $assembly")
-	val process = ProcessBuilder(
-		dotnetHome?.let { "\"$dotnetHome/dotnet\"" } ?: "dotnet",
-		"\"$programPath\"",
-		"\"${assemblies.joinToString(";")}\" \"$assembly\""
-	).start()
-	val json = process.inputReader(Charsets.UTF_8).use {
-		it.readText()
-	}
+): NodeAssembly? {
+	println("[$assembly] processing")
+	val processBuilder = ProcessBuilder(
+		dotnetHome?.let { "$dotnetHome/dotnet" } ?: "dotnet",
+		programPath,
+		assemblies.joinToString(";"),
+		assembly
+	)
 	return runCatching {
+		val process = processBuilder.start()
+		val json = process.inputReader(Charsets.UTF_8).use {
+			it.readText()
+		}
 		Json.decodeFromString<NodeAssembly>(json)
 	}.getOrElse {
-		println("exception: dotnet \"$programPath\" \"${assemblies.joinToString(";")}\" \"$assembly\"")
-		println(json)
-		throw it
+		mutex.withLock {
+			println("[$assembly] exception: ${processBuilder.command().joinToString(" ")}")
+			print("[$assembly] ")
+			it.printStackTrace()
+			null
+		}
 	}
 }
 
